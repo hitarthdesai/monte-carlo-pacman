@@ -1,12 +1,7 @@
 {
-  "ServerIP": "localhost",
-  "WebSocketPort": 3002,
-  "OneClientPerIP": true,
-
-  "TrustedClientIPs": [
-    "[::1]",
-    "localhost"
-  ],
-
-  "GameFPS": 24
+	"ServerIP": "localhost",
+	"WebSocketPort": 3002,
+	"OneClientPerIP": false,
+	"TrustedClientIPs": ["[::1]", "localhost"],
+	"GameFPS": 24
 }
