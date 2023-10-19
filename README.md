@@ -1,4 +1,4 @@
-This repository contains code for an updated version of the Pacbot competition. Contributions are welcome (in the form of pull requests or issues), and please feel free to reach out to ih2422@princeton.edu if you have any questions regarding the game or client implementations.
+This repository contains code for an updated version of the Pacbot competition. 
 
 There are three sub-folders, one for each part of the competition's infrastructure:
 * `bot_client`: sample Python code for creating a Pacbot high-level client and algorithm
