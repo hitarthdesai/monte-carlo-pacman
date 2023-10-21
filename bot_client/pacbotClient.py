@@ -69,10 +69,27 @@ class PacbotClient:
         # Connect to the websocket server
         await self.connect()
 
-        try:  # Try receiving messages indefinitely
-            if self._socket_open:
-                await asyncio.gather(self.recv_loop(), self.policy.decision_loop())
-        finally:  # Disconnect once the connection is over
+        awaitable_recv_loop = asyncio.ensure_future(self.recv_loop())
+        awaitable_dec_loop = asyncio.ensure_future(self.policy.decision_loop())
+        tasks = list([awaitable_recv_loop, awaitable_dec_loop])
+
+        # TODO: Add a stop signal to this loop
+        try:
+            while self._socket_open is True:
+                completed_tasks, _ = await asyncio.wait(
+                    tasks,
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+
+                # TODO: Maybe change this to a soft check
+                assert len(completed_tasks) == 1
+
+                next_direction = await completed_tasks.pop()
+                self.connection.send(next_direction)
+
+        except Exception as e:
+            print("exception in PacbotClient.run()")
+            print(e)
             await self.disconnect()
 
     async def connect(self) -> None:
