@@ -1,11 +1,10 @@
-from typing import Union
-from algo import algo
-
-# Asyncio (for concurrency)
 import asyncio
+from typing import Optional
 
-# Game state
-from gameState import GameState
+from algo import algo
+from util import location_to_direction
+
+from gameState import GameState, Location, Direction
 
 
 class DecisionModule:
@@ -26,18 +25,18 @@ class DecisionModule:
         self.getting_next_move: bool = False
 
     # TODO: Consider chase vs scatter mode.
-    def _get_target(self):
+    def _get_target(self) -> Optional[Location]:
         return self.state.find_closest_pellet(self.state.pacmanLoc)
 
-    def _get_next_move(self):
+    def _get_next_move(self) -> Optional[Direction]:
         self.getting_next_move = True
         target = self._get_target()
 
         path = algo(self.state, self.state.pacmanLoc, target)
         if path is not None and len(path) > 0:
-            next_grid = path[0]
+            move = location_to_direction(self.state.pacmanLoc, path[0])
             self.getting_next_move = False
-            return next_grid
+            return move
 
         raise Exception("No path found")
 
@@ -57,24 +56,13 @@ class DecisionModule:
         self.state.lock()
 
         await asyncio.sleep(0.2)
-
-        p_loc = self.state.pacmanLoc
         next_move = self._get_next_move()
 
         # Unlock the game state
         self.state.unlock()
 
-        try:
-            if p_loc.row == next_move.row:
-                if p_loc.col < next_move.col:
-                    return "d"
-                else:
-                    return "a"
-            else:
-                if p_loc.row < next_move.row:
-                    return "s"
-                else:
-                    return "w"
-        except:  # noqa: E722
-            print("WHOOOOOPS")
-            return ""
+        if next_move is None:
+            print("No move found 🤔")
+            await asyncio.sleep(0.2)
+        else:
+            return ["w", "a", "s", "d"][next_move]
