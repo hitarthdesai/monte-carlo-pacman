@@ -69,27 +69,34 @@ class PacbotClient:
         # Connect to the websocket server
         await self.connect()
 
-        awaitable_recv_loop = asyncio.ensure_future(self.recv_loop())
+        # Wrap the loops in a future, and create a list of futures
+        rec_loop = asyncio.ensure_future(self.recv_loop())
+        dec_loop = asyncio.ensure_future(self.policy.decision_loop())
+        list_of_tasks = list([rec_loop, dec_loop])
 
         # TODO: Add a stop signal to this loop
         try:
             while self._socket_open is True:
-                self.policy.state = self.state
                 completed_tasks, _ = await asyncio.wait(
-                    list(
-                        [
-                            awaitable_recv_loop,
-                            asyncio.ensure_future(self.policy.decision_loop()),
-                        ]
-                    ),
+                    list_of_tasks,
                     return_when=asyncio.FIRST_COMPLETED,
                 )
 
                 # TODO: Maybe change this to a soft check
                 assert len(completed_tasks) == 1
 
+                # Get the result of the completed task
                 next_direction = await completed_tasks.pop()
-                self.connection.send(next_direction)
+
+                # Send the next direction if it exists
+                if next_direction is None:
+                    print("next_direction is None")
+                else:
+                    self.connection.send(next_direction)
+
+                # Restart the decision loop
+                dec_loop.cancel()
+                list_of_tasks[1] = asyncio.ensure_future(self.policy.decision_loop())
 
         except Exception as e:
             print("exception in PacbotClient.run()")
