@@ -20,7 +20,7 @@ class Node:
 # Calculate the Manhattan distance heuristic between two positions
 #  |x2 - x1| + |y2 - y1|
 def calc_heuristic(current: Location, target: Location) -> int:
-    return current.distance_to(target.row, target.col)
+    return current.distance_to(target)
 
 
 # Find a path from start to target position using A* algorithm

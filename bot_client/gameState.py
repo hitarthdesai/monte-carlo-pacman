@@ -74,14 +74,14 @@ class Location:
     Location of an entity in the game engine
     """
 
-    def __init__(self, row=32, col=32) -> None:
+    def __init__(self) -> None:
         """
         Construct a new location state object
         """
         self.rowDir: int = 0
-        self.row: int = row
+        self.row: int = 32
         self.colDir: int = 0
-        self.col: int = col
+        self.col: int = 32
 
     def update(self, loc_uint16: int) -> None:
         """
@@ -115,12 +115,12 @@ class Location:
 
         return (self.row == row) and (self.col == col)
 
-    def distance_to(self, row: int, col: int) -> float:
+    def distance_to(self, other: "Location") -> float:
         """
         Determine the manhattan distance to a row and column
         """
 
-        return abs(self.row - row) + abs(self.col - col)
+        return abs(self.row - other.row) + abs(self.col - other.col)
 
 
 class Ghost:
@@ -364,7 +364,6 @@ class GameState:
             if self.pelletAt(row, col) is True:
                 loc = Location()
                 loc.update((row << 8) | col)
-                print("LOCATION", loc.row, loc.col)
                 return loc
 
             for dr, dc in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
