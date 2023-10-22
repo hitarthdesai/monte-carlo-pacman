@@ -1,3 +1,21 @@
+"""
+Methods that could be added to GameState class
+
+def find_nearest_scared_ghost(self) -> Union[Location, None]:
+    ghosts = self.state.ghosts
+    scared_ghosts = list(filter(lambda ghost: ghost.is_frightened(), ghosts))
+
+    if len(scared_ghosts) == 0:
+        return None
+
+    return min(
+        scared_ghosts,
+        key=lambda ghost: self.state.pacmanLoc.distance_to(
+            ghost.location.row, ghost.location.col
+        ),
+    ).location
+"""
+
 # Enum class (for game mode)
 from enum import IntEnum
 
@@ -6,6 +24,9 @@ from struct import unpack_from
 
 # Internal representation of walls
 from walls import wallArr
+
+# Deque to find closest pellet
+from collections import deque
 
 
 class GameMode(IntEnum):
@@ -53,14 +74,14 @@ class Location:
     Location of an entity in the game engine
     """
 
-    def __init__(self) -> None:
+    def __init__(self, row=32, col=32) -> None:
         """
         Construct a new location state object
         """
         self.rowDir: int = 0
-        self.row: int = 32
+        self.row: int = row
         self.colDir: int = 0
-        self.col: int = 32
+        self.col: int = col
 
     def update(self, loc_uint16: int) -> None:
         """
@@ -94,6 +115,13 @@ class Location:
 
         return (self.row == row) and (self.col == col)
 
+    def distance_to(self, row: int, col: int) -> float:
+        """
+        Determine the manhattan distance to a row and column
+        """
+
+        return abs(self.row - row) + abs(self.col - col)
+
 
 class Ghost:
     """
@@ -118,6 +146,10 @@ class Ghost:
 
         self.frightCycles = aux_info & 0xFF
         self.spawning = bool(aux_info >> 7)
+
+    # TODO: Check if this is correct
+    def is_frightened(self):
+        return self.frightCycles > 0
 
 
 class GameState:
@@ -320,3 +352,31 @@ class GameState:
 
         # New line at end of display
         print()
+
+    def find_closest_pellet(self, anchor: Location) -> Location:
+        queue = deque([(anchor.row, anchor.col)])
+        visited = set([anchor])
+
+        while queue:
+            pos = queue.popleft()
+            row, col = pos
+
+            if self.pelletAt(row, col) is True:
+                loc = Location()
+                loc.update((row << 8) | col)
+                print("LOCATION", loc.row, loc.col)
+                return loc
+
+            for dr, dc in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+                new_row, new_col = row + dr, col + dc
+
+                if (
+                    0 <= new_row < 31
+                    and 0 <= new_col < 28
+                    and self.wallAt(new_row, new_col) is False
+                    and (new_row, new_col) not in visited
+                ):
+                    queue.append((new_row, new_col))
+                    visited.add((new_row, new_col))
+
+        raise Exception("No pellet found")

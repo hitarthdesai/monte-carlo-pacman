@@ -70,14 +70,18 @@ class PacbotClient:
         await self.connect()
 
         awaitable_recv_loop = asyncio.ensure_future(self.recv_loop())
-        awaitable_dec_loop = asyncio.ensure_future(self.policy.decision_loop())
-        tasks = list([awaitable_recv_loop, awaitable_dec_loop])
 
         # TODO: Add a stop signal to this loop
         try:
             while self._socket_open is True:
+                self.policy.state = self.state
                 completed_tasks, _ = await asyncio.wait(
-                    tasks,
+                    list(
+                        [
+                            awaitable_recv_loop,
+                            asyncio.ensure_future(self.policy.decision_loop()),
+                        ]
+                    ),
                     return_when=asyncio.FIRST_COMPLETED,
                 )
 
