@@ -2,6 +2,9 @@
 	"ServerIP": "localhost",
 	"WebSocketPort": 3002,
 	"OneClientPerIP": false,
+
 	"TrustedClientIPs": ["[::1]", "localhost"],
-	"GameFPS": 24
+
+	"GameFPS": 24,
+	"NumActiveGhosts": 4
 }

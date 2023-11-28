@@ -15,24 +15,26 @@ from gameState import GameState
 # Decision module
 from decisionModule import DecisionModule
 
+# Server messages
+from serverMessage import *
+
 # Restore the ability to use Ctrl + C within asyncio
 import signal
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-# Font color modifiers
-RED = "\033[31m"
-NORMAL = "\033[0m"
+# Terminal colors for formatting output text
+from terminalColors import *
 
 
 # Get the connect URL from the config.json file
-def get_connect_url() -> str:
+def getConnectURL() -> str:
     # Read the configuration file
-    with open("../config.json", "r", encoding="UTF-8") as config_json:
-        config_dict = json.load(config_json)
+    with open("../config.json", "r", encoding="UTF-8") as configFile:
+        config = json.load(configFile)
 
     # Return the websocket connect address
-    return f'ws://{config_dict["ServerIP"]}:{config_dict["WebSocketPort"]}'
+    return f'ws://{config["ServerIP"]}:{config["WebSocketPort"]}'
 
 
 class PacbotClient:
@@ -41,16 +43,16 @@ class PacbotClient:
     Pacbot game server, using asyncio.
     """
 
-    def __init__(self, connect_url: str) -> None:
+    def __init__(self, connectURL: str) -> None:
         """
         Construct a new Pacbot client object
         """
 
         # Connection URL (starts with ws://)
-        self.connect_url: str = connect_url
+        self.connectURL: str = connectURL
 
         # Private variable to store whether the socket is open
-        self._socket_open: bool = False
+        self._socketOpen: bool = False
 
         # Connection object to communicate with the server
         self.connection: ClientConnection
@@ -59,7 +61,7 @@ class PacbotClient:
         self.state: GameState = GameState()
 
         # Decision module (policy) to make high-level decisions
-        self.policy: DecisionModule = DecisionModule(self.state)
+        self.decisionModule: DecisionModule = DecisionModule(self.state)
 
     async def run(self) -> None:
         """
@@ -69,38 +71,12 @@ class PacbotClient:
         # Connect to the websocket server
         await self.connect()
 
-        # Wrap the loops in a future, and create a list of futures
-        rec_loop = asyncio.ensure_future(self.recv_loop())
-        dec_loop = asyncio.ensure_future(self.policy.decision_loop())
-        list_of_tasks = list([rec_loop, dec_loop])
-
-        # TODO: Add a stop signal to this loop
-        try:
-            while self._socket_open is True:
-                completed_tasks, _ = await asyncio.wait(
-                    list_of_tasks,
-                    return_when=asyncio.FIRST_COMPLETED,
+        try:  # Try receiving messages indefinitely
+            if self._socketOpen:
+                await asyncio.gather(
+                    self.receiveLoop(), self.decisionModule.decisionLoop()
                 )
-
-                # TODO: Maybe change this to a soft check
-                assert len(completed_tasks) == 1
-
-                # Get the result of the completed task
-                next_direction = await completed_tasks.pop()
-
-                # Send the next direction if it exists
-                if next_direction is None:
-                    print("next_direction is None")
-                else:
-                    self.connection.send(next_direction)
-
-                # Restart the decision loop
-                dec_loop.cancel()
-                list_of_tasks[1] = asyncio.ensure_future(self.policy.decision_loop())
-
-        except Exception as e:
-            print("exception in PacbotClient.run()")
-            print(e)
+        finally:  # Disconnect once the connection is over
             await self.disconnect()
 
     async def connect(self) -> None:
@@ -110,13 +86,14 @@ class PacbotClient:
 
         # Connect to the specified URL
         try:
-            self.connection = connect(self.connect_url)
-            self._socket_open = True
+            self.connection = connect(self.connectURL)
+            self._socketOpen = True
+            self.state.setConnectionStatus(True)
 
         # If the connection is refused, log and return
         except ConnectionRefusedError:
             print(
-                f"{RED}Websocket connection refused [{self.connect_url}]\n"
+                f"{RED}Websocket connection refused [{self.connectURL}]\n"
                 f"Are the address and port correct, and is the "
                 f"server running?{NORMAL}"
             )
@@ -128,52 +105,60 @@ class PacbotClient:
         """
 
         # Close the connection
-        if self._socket_open:
+        if self._socketOpen:
             self.connection.close()
-        self._socket_open = False
+        self._socketOpen = False
+        self.state.setConnectionStatus(False)
 
     # Return whether the connection is open
-    def is_open(self) -> bool:
+    def isOpen(self) -> bool:
         """
         Check whether the connection is open (unused)
         """
-        return self._socket_open
+        return self._socketOpen
 
-    async def recv_loop(self) -> None:
+    async def receiveLoop(self) -> None:
         """
         Receive loop for capturing messages from the server
         """
 
         # Receive values as long as the connection is open
-        while self._socket_open:
+        while self.isOpen():
             # Try to receive messages (and skip to except in case of an error)
             try:
                 # Receive a message from the connection
                 message: Data = self.connection.recv()
 
                 # Convert the message to bytes, if necessary
-                message_bytes: bytes
+                messageBytes: bytes
                 if isinstance(message, bytes):
-                    message_bytes = message  # type: ignore
+                    messageBytes = message  # type: ignore
                 else:
-                    message_bytes = message.encode("ascii")  # type: ignore
+                    messageBytes = message.encode("ascii")  # type: ignore
 
                 # Update the state, given this message from the server
-                self.state.update(message_bytes)
+                self.state.update(messageBytes)
+
+                # Write a response back to the server if necessary
+                if self.state.writeServerBuf and self.state.writeServerBuf[0].tick():
+                    response: bytes = self.state.writeServerBuf.popleft().getBytes()
+                    self.connection.send(response)
 
                 # Free the event loop to allow another decision
                 await asyncio.sleep(0)
 
             # Break once the connection is closed
             except ConnectionClosedError:
+                print("Connection lost...")
+                self.state.setConnectionStatus(False)
                 break
 
 
 # Main function
 async def main():
     # Get the URL to connect to
-    connect_url = get_connect_url()
-    client = PacbotClient(connect_url)
+    connectURL = getConnectURL()
+    client = PacbotClient(connectURL)
     await client.run()
 
     # Once the connection is closed, end the event loop

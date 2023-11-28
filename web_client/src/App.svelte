@@ -84,6 +84,20 @@
   // Keep track of the game mode (from the server)
   let gameMode = 0;
 
+  /*
+    Keep track of the number of steps until the mode changes, as well as the
+    mode duration (from the server)
+  */
+  let modeSteps = 0;
+  let modeDuration = 255;
+
+  /*
+    Keep track of the number of steps until the fruit disappears, as well as
+    the fruit duration (from the server)
+  */
+  let fruitSteps = 0;
+  let fruitDuration = 30;
+
   // Local object to encode the possible modes
   const Modes = {
     Paused:   0,
@@ -115,6 +129,8 @@
 
   let fruitRowState = 32;
   let fruitColState = 32;
+
+  let numActiveGhosts = config.NumActiveGhosts;
 
   let redRowState = 11;
   let redColState = 13 | Directions.Left; // left
@@ -170,6 +186,10 @@
         // Get the game mode from the server
         gameMode          = view.getUint8(byteIdx++, false);
 
+        // Get the mode steps and duration from the server
+        modeSteps         = view.getUint8(byteIdx++, false);
+        modeDuration      = view.getUint8(byteIdx++, false);
+
         // Get the current score from the server
         currScore         = view.getUint16(byteIdx, false); byteIdx += 2;
 
@@ -200,6 +220,10 @@
         // Parse fruit data
         fruitRowState     = view.getUint8(byteIdx++, false);
         fruitColState     = view.getUint8(byteIdx++, false);
+
+        // Get the fruit steps and duration from the server
+        fruitSteps        = view.getUint8(byteIdx++, false);
+        fruitDuration     = view.getUint8(byteIdx++, false);
 
         // Parse pellet data
         for (let row = 0; row < 31; row++) {
@@ -360,6 +384,8 @@
     {gridSize}
     {fruitRowState}
     {fruitColState}
+    {fruitSteps}
+    {fruitDuration}
   />
 
   <Pacman
@@ -368,45 +394,53 @@
     {pacmanColState}
   />
 
-  <Ghost
-    {gridSize}
-    {modTicks}
-    {updatePeriod}
-    rowState={redRowState}
-    colState={redColState}
-    frightState={redFrightState}
-    color='red'
-  />
+  {#if numActiveGhosts >= 1}
+    <Ghost
+      {gridSize}
+      {modTicks}
+      {updatePeriod}
+      rowState={redRowState}
+      colState={redColState}
+      frightState={redFrightState}
+      color='red'
+    />
+  {/if}
 
-  <Ghost
-    {gridSize}
-    {modTicks}
-    {updatePeriod}
-    rowState={pinkRowState}
-    colState={pinkColState}
-    frightState={pinkFrightState}
-    color='pink'
-  />
+  {#if numActiveGhosts >= 2}
+    <Ghost
+      {gridSize}
+      {modTicks}
+      {updatePeriod}
+      rowState={pinkRowState}
+      colState={pinkColState}
+      frightState={pinkFrightState}
+      color='pink'
+    />
+  {/if}
 
-  <Ghost
-    {gridSize}
-    {modTicks}
-    {updatePeriod}
-    rowState={cyanRowState}
-    colState={cyanColState}
-    frightState={cyanFrightState}
-    color='cyan'
-  />
+  {#if numActiveGhosts >= 3}
+    <Ghost
+      {gridSize}
+      {modTicks}
+      {updatePeriod}
+      rowState={cyanRowState}
+      colState={cyanColState}
+      frightState={cyanFrightState}
+      color='cyan'
+    />
+  {/if}
 
-  <Ghost
-    {gridSize}
-    {modTicks}
-    {updatePeriod}
-    rowState={orangeRowState}
-    colState={orangeColState}
-    frightState={orangeFrightState}
-    color='orange'
-  />
+  {#if numActiveGhosts >= 4}
+    <Ghost
+      {gridSize}
+      {modTicks}
+      {updatePeriod}
+      rowState={orangeRowState}
+      colState={orangeColState}
+      frightState={orangeFrightState}
+      color='orange'
+    />
+  {/if}
 
   <Mps
     {gridSize}
@@ -418,6 +452,8 @@
     {modTicks}
     {updatePeriod}
     {gameMode}
+    {modeSteps}
+    {modeDuration}
     {Modes}
     {togglePause}
   />
