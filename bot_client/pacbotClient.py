@@ -139,11 +139,15 @@ class PacbotClient:
                 # Update the state, given this message from the server
                 self.state.update(messageBytes)
 
+                # Free the event loop to allow another decision
+                # await asyncio.sleep(0)
+
                 # Write a response back to the server if necessary
                 if self.state.writeServerBuf and self.state.writeServerBuf[0].tick():
                     response: bytes = self.state.writeServerBuf.popleft().getBytes()
                     self.connection.send(response)
 
+                # Original position of single asyncio.sleep() from sample code
                 # Free the event loop to allow another decision
                 await asyncio.sleep(0)
 

@@ -1,18 +1,18 @@
 from typing import Optional
-from gameState import Location, Direction
+from gameState import Location, Directions
 
 
-def location_to_direction(p: Location, n: Location) -> Optional[Direction]:
+def location_to_direction(p: Location, n: Location) -> Directions:
     try:
         if p.row == n.row:
             if p.col < n.col:
-                return Direction.RIGHT
+                return Directions.RIGHT
             else:
-                return Direction.LEFT
+                return Directions.LEFT
         else:
             if p.row < n.row:
-                return Direction.DOWN
+                return Directions.DOWN
             else:
-                return Direction.UP
+                return Directions.UP
     except:
-        return None
+        return Directions.NONE

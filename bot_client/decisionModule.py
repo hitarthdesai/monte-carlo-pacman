@@ -1,10 +1,11 @@
 import asyncio
-from typing import Optional
+import heapq
+from typing import Optional, List
 
-# from algo import algo
-# from util import location_to_direction
+from algo import Node
+from util import location_to_direction
 
-from gameState import GameState, Directions
+from gameState import GameState, Directions, Location, GameModes
 
 
 class DecisionModule:
@@ -22,23 +23,88 @@ class DecisionModule:
         self.state = state
 
         # If we are currently getting the next move
-        # self.getting_next_move: bool = False
+        self.getting_next_move: bool = False
 
     # TODO: Consider chase vs scatter mode.
-    # def _get_target(self) -> Optional[Location]:
-    #     return self.state.find_closest_pellet(self.state.pacmanLoc)
+    def _get_target(self) -> Optional[Location]:
+        return self.state.find_closest_pellet(self.state.pacmanLoc)
 
-    # def _get_next_move(self) -> Optional[Direction]:
-    #     self.getting_next_move = True
-    #     target = self._get_target()
+    def _get_next_move(self) -> Directions:
+        self.getting_next_move = True
+        target = self._get_target()
 
-    #     path = algo(self.state, self.state.pacmanLoc, target)
-    #     if path is not None and len(path) > 0:
-    #         move = location_to_direction(self.state.pacmanLoc, path[0])
-    #         self.getting_next_move = False
-    #         return move
+        start = self.state.pacmanLoc
+        path = self.algo(start, target)
+        if path is not None and len(path) > 0:
+            move = location_to_direction(start, path[0])
+            self.getting_next_move = False
+            return move
 
-    #     raise Exception("No path found")
+        print("No path found 🥲")
+        return Directions.NONE
+
+    def algo(self, start: Location, target: Location) -> List[Location]:
+        """
+        Find a path from start to target position using A*
+        """
+        open_list: List[Node] = list()  # Priority queue for open nodes
+        closed_set = set()  # Set to store visited nodes
+
+        # Create the start node and initialize its costs
+        head = Node(start, None)
+        head.g = 0
+        head.h = start.distance_to(target)
+        head.f = head.h
+
+        # Add the start node to open list
+        heapq.heappush(open_list, head)
+
+        while open_list:
+            curr = heapq.heappop(open_list)
+
+            # Check if the current node is the target node
+            if curr.position.at(target.row, target.col):
+                path: List[Location] = []
+                # Reconstruct the path by following parent pointers
+                while curr.position != start:
+                    path.append(curr.position)
+                    curr = curr.parent
+
+                path.reverse()
+                return path
+
+            # TODO: Needs to be made serializable
+            closed_set.add(curr.position)
+
+            all_neighbors = map(
+                lambda dir: (curr.position.row + dir[0], curr.position.col + dir[1]),
+                [
+                    (1, 0),
+                    (-1, 0),
+                    (0, 1),
+                    (0, -1),
+                ],
+            )
+
+            valid_neighbors = filter(
+                lambda pos: not self.state.wallAt(pos[0], pos[1]),
+                all_neighbors,
+            )
+
+            for neighbor in valid_neighbors:
+                if neighbor in closed_set:
+                    continue
+
+                loc = Location(self.state)
+                loc.update((neighbor[0] << 8) | neighbor[1])
+                node = Node(loc, curr)
+                node.g = curr.g + 1
+                node.h = loc.distance_to(target)
+                node.f = node.g + node.h
+
+                heapq.heappush(open_list, node)
+
+        return None
 
     async def decisionLoop(self) -> None:
         """
@@ -54,28 +120,21 @@ class DecisionModule:
             """
 
             # If the current messages haven't been sent out yet, skip this iteration
-            if len(self.state.writeServerBuf):
-                await asyncio.sleep(0)
+            if (
+                len(self.state.writeServerBuf) > 0
+                or self.state.gameMode == GameModes.PAUSED.value
+            ):
+                await asyncio.sleep(0.01)
                 continue
 
             # Lock the game state
             self.state.lock()
 
-            # next_move = self._get_next_move()
-            # if next_move is None:
-            #     print("No move found 🤔")
-            #     await asyncio.sleep(0.2)
-            # else:
-            #     return ["w", "a", "s", "d"][next_move]
+            # Get the next move
+            next_move = self._get_next_move()
 
-            # Write back to the server, as a test (move right)
-            self.state.queueAction(4, Directions.RIGHT)
+            # Write back to the server
+            self.state.queueAction(4, next_move)
 
             # Unlock the game state
             self.state.unlock()
-
-            # Print that a decision has been made
-            print("decided")
-
-            # Free up the event loop
-            await asyncio.sleep(0)

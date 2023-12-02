@@ -1,3 +1,5 @@
+from typing import Optional
+
 # Enum class (for game mode)
 from enum import IntEnum
 
@@ -194,6 +196,13 @@ class Location:
         """
 
         return abs(self.row - other.row) + abs(self.col - other.col)
+
+    def __str__(self) -> str:
+        """
+        Return a string representation of this location
+        """
+
+        return f"({self.row}, {self.col})"
 
 
 class Ghost:
@@ -893,6 +902,34 @@ class GameState:
         # Return that Pacman was safe during this transition
         return True
 
+    def find_closest_pellet(self, anchor: Location) -> Optional[Location]:
+        queue = deque([(anchor.row, anchor.col)])
+        visited = set([anchor])
+
+        while queue:
+            pos = queue.popleft()
+            row, col = pos
+
+            if self.pelletAt(row, col) is True:
+                loc = Location(self)
+                loc.update((row << 8) | col)
+                return loc
+
+            for dr, dc in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+                new_row, new_col = row + dr, col + dc
+
+                if (
+                    0 <= new_row < 31
+                    and 0 <= new_col < 28
+                    and self.wallAt(new_row, new_col) is False
+                    and (new_row, new_col) not in visited
+                ):
+                    queue.append((new_row, new_col))
+                    visited.add((new_row, new_col))
+
+        print("No pellet found 🥲")
+        return None
+
 
 def compressGameState(state: GameState) -> GameStateCompressed:
     """
@@ -912,32 +949,3 @@ def decompressGameState(state: GameState, compressed: GameStateCompressed):
 
     # Unpack the ghost plans
     state.updateGhostPlans(compressed.ghostPlans)
-
-
-def find_closest_pellet(self, anchor: Location) -> Location:
-    queue = deque([(anchor.row, anchor.col)])
-    visited = set([anchor])
-
-    while queue:
-        pos = queue.popleft()
-        row, col = pos
-
-        if self.pelletAt(row, col) is True:
-            loc = Location()
-            loc.update((row << 8) | col)
-            print("LOCATION", loc.row, loc.col)
-            return loc
-
-        for dr, dc in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
-            new_row, new_col = row + dr, col + dc
-
-            if (
-                0 <= new_row < 31
-                and 0 <= new_col < 28
-                and self.wallAt(new_row, new_col) is False
-                and (new_row, new_col) not in visited
-            ):
-                queue.append((new_row, new_col))
-                visited.add((new_row, new_col))
-
-    raise Exception("No pellet found")
