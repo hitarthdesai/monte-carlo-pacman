@@ -27,7 +27,10 @@ class DecisionModule:
 
     # TODO: Consider chase vs scatter mode.
     def _get_target(self) -> Optional[Location]:
-        return self.state.find_closest_pellet(self.state.pacmanLoc)
+        try:
+            return self.state.find_closest_pellet(self.state.pacmanLoc)
+        except Exception:
+            return self.state.pacmanLoc
 
     def _get_next_move(self) -> Directions:
         self.getting_next_move = True
