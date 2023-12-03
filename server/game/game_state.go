@@ -5,6 +5,8 @@ import (
 	"math/rand"
 	"sync"
 	"time"
+	"os"
+	"fmt"
 )
 
 /*
@@ -331,6 +333,24 @@ func (gs *gameState) setLives(lives uint8) {
 	gs.muLives.Unlock()
 }
 
+func (gs *gameState) writeScore() {
+	log.Printf("ENTERED HERE\n")
+	// Open or create a file for writing
+	file,err := os.OpenFile("output.txt", os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	// Get the uint16 score from the gameState
+	score := gs.getScore()
+
+	// Write the uint16 score to the file
+	_,err = fmt.Fprintf(file, "%d", score)
+
+	return
+}
+
 // Helper function to decrement the lives left
 func (gs *gameState) decrementLives() {
 
@@ -338,6 +358,10 @@ func (gs *gameState) decrementLives() {
 	lives := gs.getLives()
 
 	// If there were no lives, no need to decrement any more
+	if lives == 1 {
+		gs.writeScore()
+	}
+
 	if lives == 0 {
 		return
 	}
