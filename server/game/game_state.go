@@ -336,7 +336,8 @@ func (gs *gameState) setLives(lives uint8) {
 func (gs *gameState) writeScore() {
 	log.Printf("ENTERED HERE\n")
 	// Open or create a file for writing
-	file,err := os.OpenFile("output.txt", os.O_WRONLY|os.O_CREATE, 0644)
+	filePath := "C:/dev/6ix-pac/output.txt"
+	file,err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		return
 	}
@@ -346,7 +347,7 @@ func (gs *gameState) writeScore() {
 	score := gs.getScore()
 
 	// Write the uint16 score to the file
-	_,err = fmt.Fprintf(file, "%d", score)
+	_,err = fmt.Fprintf(file, "%d\n", score)
 
 	return
 }
@@ -360,9 +361,11 @@ func (gs *gameState) decrementLives() {
 	// If there were no lives, no need to decrement any more
 	if lives == 1 {
 		gs.writeScore()
+		os.Exit(0)
 	}
 
 	if lives == 0 {
+		
 		return
 	}
 

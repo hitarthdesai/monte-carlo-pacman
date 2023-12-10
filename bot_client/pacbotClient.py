@@ -26,6 +26,8 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 # Terminal colors for formatting output text
 from terminalColors import *
 
+import sys
+
 
 # Get the connect URL from the config.json file
 def getConnectURL() -> str:
@@ -175,3 +177,4 @@ if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.create_task(main())
     loop.run_forever()
+
