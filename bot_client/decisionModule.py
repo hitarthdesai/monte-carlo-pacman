@@ -22,8 +22,17 @@ class DecisionModule:
         # Game state object to store the game information
         self.state = state
 
-        # If we are currently getting the next move
-        self.getting_next_move: bool = False
+        # Locations of super pellets
+        # TODO: There has to be a better way of doing this
+        self.superPellets: List[Location] = [None] * 4
+        self.superPellets[0] = Location(self.state)
+        self.superPellets[0].update((3 << 8) | 1)
+        self.superPellets[1] = Location(self.state)
+        self.superPellets[1].update((3 << 8) | 26)
+        self.superPellets[2] = Location(self.state)
+        self.superPellets[2].update((23 << 8) | 1)
+        self.superPellets[3] = Location(self.state)
+        self.superPellets[3].update((23 << 8) | 26)
 
     # TODO: Consider chase vs scatter mode.
     def _get_target(self) -> Optional[Location]:
@@ -33,21 +42,32 @@ class DecisionModule:
             return self.state.pacmanLoc
 
     def _get_next_move(self) -> Directions:
-        self.getting_next_move = True
         target = self._get_target()
 
         start = self.state.pacmanLoc
         path = self.algo(start, target)
         if path is not None and len(path) > 0:
-            move = location_to_direction(start, path[0])
-            self.getting_next_move = False
+            _move = path[0]
+
+            # Remove super pellet if we're on it
+            if self.state.superPelletAt(_move.row, _move.col):
+                self.superPellets = list(
+                    filter(
+                        lambda sp: not (sp.row == _move.row and sp.col == _move.col),
+                        self.superPellets,
+                    )
+                )
+
+            move = location_to_direction(start, _move)
             return move
 
         print("No path found 🥲")
         return Directions.NONE
 
-    def _get_heuristic(self, start: Location, other: Location) -> int:
-        return start.distance_to(other)
+    def _get_heuristic(self, curr: Location, other: Location) -> int:
+        manhattan_distance = curr.distance_to(other)
+
+        return manhattan_distance
 
     def algo(self, start: Location, target: Location) -> List[Location]:
         """

@@ -195,7 +195,13 @@ class Location:
         Determine the manhattan distance to a row and column
         """
 
-        return abs(self.row - other.row) + abs(self.col - other.col)
+        try:
+            return abs(self.row - other.row) + abs(self.col - other.col)
+        except Exception as e:
+            print("Error in distance_to(): ", e)
+            print("self: ", self)
+            print("other: ", other)
+            return 0
 
     def __str__(self) -> str:
         """
