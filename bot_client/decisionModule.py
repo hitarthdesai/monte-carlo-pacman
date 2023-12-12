@@ -46,6 +46,9 @@ class DecisionModule:
         print("No path found 🥲")
         return Directions.NONE
 
+    def _get_heuristic(self, start: Location, other: Location) -> int:
+        return start.distance_to(other)
+
     def algo(self, start: Location, target: Location) -> List[Location]:
         """
         Find a path from start to target position using A*
@@ -56,7 +59,7 @@ class DecisionModule:
         # Create the start node and initialize its costs
         head = Node(start, None)
         head.g = 0
-        head.h = start.distance_to(target)
+        head.h = self._get_heuristic(start, target)
         head.f = head.h
 
         # Add the start node to open list
@@ -102,7 +105,7 @@ class DecisionModule:
                 loc.update((neighbor[0] << 8) | neighbor[1])
                 node = Node(loc, curr)
                 node.g = curr.g + 1
-                node.h = loc.distance_to(target)
+                node.h = self._get_heuristic(loc, target)
                 node.f = node.g + node.h
 
                 heapq.heappush(open_list, node)
