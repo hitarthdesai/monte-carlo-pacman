@@ -3,6 +3,7 @@ import heapq
 from typing import Optional, List
 
 from algo import Node
+from heuristic import Heuristic
 from util import location_to_direction
 
 from gameState import GameState, Directions, Location, GameModes
@@ -21,6 +22,7 @@ class DecisionModule:
 
         # Game state object to store the game information
         self.state = state
+        self.heuristic = Heuristic(state)
 
         # Locations of super pellets
         # TODO: There has to be a better way of doing this
@@ -38,7 +40,8 @@ class DecisionModule:
     def _get_target(self) -> Optional[Location]:
         try:
             return self.state.find_closest_pellet(self.state.pacmanLoc)
-        except Exception:
+        except Exception as e:
+            print(f"Error in finding closest pellet: {e}")
             return self.state.pacmanLoc
 
     def _get_next_move(self) -> Directions:
@@ -65,9 +68,7 @@ class DecisionModule:
         return Directions.NONE
 
     def _get_heuristic(self, curr: Location, other: Location) -> int:
-        manhattan_distance = curr.distance_to(other)
-
-        return manhattan_distance
+        return self.heuristic.get_overall_heuristic(curr, other)
 
     def algo(self, start: Location, target: Location) -> List[Location]:
         """

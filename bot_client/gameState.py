@@ -198,9 +198,9 @@ class Location:
         try:
             return abs(self.row - other.row) + abs(self.col - other.col)
         except Exception as e:
-            print("Error in distance_to(): ", e)
-            print("self: ", self)
-            print("other: ", other)
+            print(f"Error in distance_to(): {e}")
+            print(f"self: {self}")
+            print(f"other: {other}")
             return 0
 
     def __str__(self) -> str:
