@@ -1,10 +1,11 @@
 import asyncio
 import heapq
 from typing import Optional, List
-
+import math
 from algo import Node
 from heuristic import Heuristic
 from util import location_to_direction
+from cluster import Cluster, Clusters
 
 from gameState import GameState, Directions, Location, GameModes
 
@@ -69,6 +70,35 @@ class DecisionModule:
 
     def _get_heuristic(self, curr: Location, other: Location) -> int:
         return self.heuristic.get_overall_heuristic(curr, other)
+    
+    def find_closest_pellet(self, anchor: Location) -> Location:
+        grid_width, grid_height = (27, 31)
+        num_clusters = 4  # must be a perfect square
+        cluster_starting_coords = []
+
+        #center multiples determine cluster coords. ex if num_clusters = 4, want 2 clusters across, 2 down; divide grid_width into 1/(sqrt(2)+1) = 3 equal sections
+        x_center_multiples, y_center_multiples = int(grid_width/(math.sqrt(num_clusters)+1)), int(grid_height/(math.sqrt(num_clusters)+1))
+
+        for i in range(int(math.sqrt(num_clusters))):
+            for j in range(int(math.sqrt(num_clusters))):
+                coords = [(i+1)*x_center_multiples, (j+1)*y_center_multiples]
+                cluster_starting_coords.append(coords)
+
+        # Create cluster objects
+        clusters = [Cluster(Location((coords[0], coords[1])), self.state) for coords in cluster_starting_coords]
+
+        pellets: List[Location] = list()
+        # TODO: Here is where I don't know how to get the pellets - this code below needs to convert to new GE.
+        for x in range(self.num_rows):
+            for y in range(self.num_cols):
+                if board[x][y].type == GridUnitType.Pellet.value:
+                    pellets.append(board[x][y].coordinates)
+                    
+        # Metric for closeness: Manhattan distance
+        return min(
+            pellets,
+            key=lambda point: anchor.distance_to(point) - self.cluster_heuristic(point, clusters),
+        )
 
     def algo(self, start: Location, target: Location) -> List[Location]:
         """

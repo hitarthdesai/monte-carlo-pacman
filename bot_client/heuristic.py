@@ -9,9 +9,10 @@ class Heuristic:
             self._manhattan_distance,
             self._avoid_too_close_to_normal_ghosts,
             self._prefer_close_to_scared_ghosts,
+            self.cluster_heuristic
         ]
         self.num_heuristics = len(self.heuristics)
-        print(f"Number of Heursitics: {self.num_heuristics}")
+        print(f"Number of Heuristics: {self.num_heuristics}")
 
     def _manhattan_distance(self):
         return self.curr.distance_to(self.target)
@@ -45,15 +46,6 @@ class Heuristic:
         penalties = map(lambda d: d - distance_threshold, distances)
 
         return sum(penalties)
-
-    def get_overall_heuristic(self, curr: Location, target: Location):
-        self.curr = curr
-        self.target = target
-
-        score = 0.0
-        for h in self.heuristics:
-            score += h() / self.num_heuristics
-        return score
     
     def cluster_heuristic(self, state: GameState, clusters: Clusters, curr: Location):
         #idea: select what cluster region the pellet belongs to, then return the magnitude of that cluster. 
@@ -76,3 +68,12 @@ class Heuristic:
             #something went wrong, dont apply heuristic
             return 0
         return clusters[cluster_num].magnitude
+
+    def get_overall_heuristic(self, curr: Location, target: Location):
+        self.curr = curr
+        self.target = target
+
+        score = 0.0
+        for h in self.heuristics:
+            score += h() / self.num_heuristics
+        return score
