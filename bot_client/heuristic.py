@@ -1,4 +1,5 @@
 from gameState import GameState, Location
+from cluster import Cluster, Clusters
 
 
 class Heuristic:
@@ -53,3 +54,25 @@ class Heuristic:
         for h in self.heuristics:
             score += h() / self.num_heuristics
         return score
+    
+    def cluster_heuristic(self, state: GameState, clusters: Clusters, curr: Location):
+        #idea: select what cluster region the pellet belongs to, then return the magnitude of that cluster. 
+        # This is used as a 'discount' of the distance, to incentivise staying in cluster region
+
+        x_swings, y_swings = clusters[0].x_swings, clusters[0].y_swings
+        n_x,n_y = curr.row, curr.col
+
+        cluster_num = -1
+
+        for i in range(len(clusters)):
+            #idea: start in cluster region 1. If both elements of diffs negative, pellet in cluster region. If not check another region, until found
+            c_x, c_y = clusters[i].coords.x + x_swings, clusters[i].coords.y + y_swings
+            diffs = n_x - c_x, n_y - c_y
+            if diffs[0] < 0 and diffs[1] < 0:
+                cluster_num = i
+                break
+            
+        if cluster_num == -1:
+            #something went wrong, dont apply heuristic
+            return 0
+        return clusters[cluster_num].magnitude
