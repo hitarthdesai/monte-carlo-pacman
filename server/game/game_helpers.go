@@ -207,7 +207,7 @@ func (gs *gameState) deathReset() {
 	defer gs.muPacman.Unlock()
 
 	// Set the game to be paused at the next update
-	gs.setPauseOnUpdate(true)
+	// gs.setPauseOnUpdate(true)
 
 	// Set Pacman to be in an empty state
 	gs.pacmanLoc.copyFrom(emptyLoc)
