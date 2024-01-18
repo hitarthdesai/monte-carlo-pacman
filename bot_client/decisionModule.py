@@ -69,35 +69,49 @@ class DecisionModule:
         return Directions.NONE
 
     def _get_heuristic(self, curr: Location, other: Location) -> int:
-        return self.heuristic.get_overall_heuristic(curr, other)
-    
+        cluster_starting_coords = [[7, 8], [7, 23], [20, 8], [20, 23]]
+        clusters = [
+            Cluster(Location((coords[0], coords[1])), self.state)
+            for coords in cluster_starting_coords
+        ]
+
+        return self.heuristic.get_overall_heuristic(clusters, curr, other)
+
     def find_closest_pellet(self, anchor: Location) -> Location:
         grid_width, grid_height = (27, 31)
         num_clusters = 4  # must be a perfect square
-        cluster_starting_coords = []
+        cluster_starting_coords = [[7, 8], [7, 23], [20, 8], [20, 23]]
 
-        #center multiples determine cluster coords. ex if num_clusters = 4, want 2 clusters across, 2 down; divide grid_width into 1/(sqrt(2)+1) = 3 equal sections
-        x_center_multiples, y_center_multiples = int(grid_width/(math.sqrt(num_clusters)+1)), int(grid_height/(math.sqrt(num_clusters)+1))
+        # center multiples determine cluster coords. ex if num_clusters = 4, want 2 clusters across, 2 down; divide grid_width into 1/(sqrt(2)+1) = 3 equal sections
+        x_center_multiples, y_center_multiples = int(
+            grid_width / (math.sqrt(num_clusters) + 1)
+        ), int(grid_height / (math.sqrt(num_clusters) + 1))
 
         for i in range(int(math.sqrt(num_clusters))):
             for j in range(int(math.sqrt(num_clusters))):
-                coords = [(i+1)*x_center_multiples, (j+1)*y_center_multiples]
+                coords = [(i + 1) * x_center_multiples, (j + 1) * y_center_multiples]
                 cluster_starting_coords.append(coords)
 
         # Create cluster objects
-        clusters = [Cluster(Location((coords[0], coords[1])), self.state) for coords in cluster_starting_coords]
+        clusters = [
+            Cluster(Location((coords[0], coords[1])), self.state)
+            for coords in cluster_starting_coords
+        ]
 
         pellets: List[Location] = list()
         # TODO: Here is where I don't know how to get the pellets - this code below needs to convert to new GE.
-        for x in range(self.num_rows):
-            for y in range(self.num_cols):
-                if board[x][y].type == GridUnitType.Pellet.value:
-                    pellets.append(board[x][y].coordinates)
-                    
+
+        pellets = list()
+        for x in range(grid_width):
+            for y in range(grid_height):
+                if self.state.pelletAt(x, y):
+                    pellets.append((x, y))
+
         # Metric for closeness: Manhattan distance
         return min(
             pellets,
-            key=lambda point: anchor.distance_to(point) - self.cluster_heuristic(point, clusters),
+            key=lambda point: anchor.distance_to(point)
+            - self.cluster_heuristic(point, clusters),
         )
 
     def algo(self, start: Location, target: Location) -> List[Location]:
