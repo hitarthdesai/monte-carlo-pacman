@@ -1,6 +1,7 @@
 import math
 from typing import List
 from gameState import GameState, Location
+import numpy as np
 
 GRID_WIDTH = 27
 GRID_HEIGHT = 31
@@ -10,7 +11,8 @@ class Cluster:
     def __init__(self, x: int, y: int) -> None:
         # NOTE: We are not passing a GameState here, beware not to use fn that depend on it
         self.location = Location(None)
-        self.location.update((x << 8) | y)
+        value = (x << 8) | y
+        self.location.update(value)
 
         self.magnitude = 0
 
@@ -28,8 +30,11 @@ class Cluster:
 
 class Clusters:
     def __init__(self, n: int) -> None:
-        self.x_swings = int(GRID_WIDTH / self.num_clusters)
-        self.y_swings = int(GRID_HEIGHT / self.num_clusters)
+        self.value = int(GRID_WIDTH / self.num_clusters)
+
+        self.x_swings = np.full(n, self.value)
+        self.y_swings = np.full(n, self.value)
+        
         self.clusters: List[Cluster] = list()
 
         x_center_multiples = int(GRID_WIDTH / (math.sqrt(n) + 1))

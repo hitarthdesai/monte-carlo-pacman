@@ -71,7 +71,7 @@ class DecisionModule:
     def _get_heuristic(self, curr: Location, other: Location) -> int:
         cluster_starting_coords = [[7, 8], [7, 23], [20, 8], [20, 23]]
         clusters = [
-            Cluster(Location((coords[0], coords[1])), self.state)
+            Cluster(coords[0], coords[1])
             for coords in cluster_starting_coords
         ]
 
@@ -80,13 +80,14 @@ class DecisionModule:
     def find_closest_pellet(self, anchor: Location) -> Location:
         grid_width, grid_height = (27, 31)
         num_clusters = 4  # must be a perfect square
-        cluster_starting_coords = [[7, 8], [7, 23], [20, 8], [20, 23]]
+        # cluster_starting_coords = [[7, 8], [7, 23], [20, 8], [20, 23]]
+        cluster_starting_coords = list()
 
         # center multiples determine cluster coords. ex if num_clusters = 4, want 2 clusters across, 2 down; divide grid_width into 1/(sqrt(2)+1) = 3 equal sections
         x_center_multiples, y_center_multiples = int(
             grid_width / (math.sqrt(num_clusters) + 1)
         ), int(grid_height / (math.sqrt(num_clusters) + 1))
-
+        # compute the coords of the center of each cluster
         for i in range(int(math.sqrt(num_clusters))):
             for j in range(int(math.sqrt(num_clusters))):
                 coords = [(i + 1) * x_center_multiples, (j + 1) * y_center_multiples]
@@ -94,7 +95,7 @@ class DecisionModule:
 
         # Create cluster objects
         clusters = [
-            Cluster(Location((coords[0], coords[1])), self.state)
+            Cluster(coords[0], coords[1])
             for coords in cluster_starting_coords
         ]
 
@@ -111,7 +112,7 @@ class DecisionModule:
         return min(
             pellets,
             key=lambda point: anchor.distance_to(point)
-            - self.cluster_heuristic(point, clusters),
+            - self.heuristic.cluster_heuristic(point, clusters)
         )
 
     def algo(self, start: Location, target: Location) -> List[Location]:
