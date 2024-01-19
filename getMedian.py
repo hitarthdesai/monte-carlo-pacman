@@ -1,7 +1,10 @@
+import os
+
+
 def read_and_convert(file_path, num_lines=10):
     # Read the last 'num_lines' values from the text file and convert to float
 
-    with open(file_path, 'r') as file:
+    with open(file_path, "r") as file:
         # Read all lines from the file
         lines = file.readlines()
 
@@ -34,6 +37,7 @@ def calculate_mean(file_path):
     # Return the means
     return mean
 
+
 def calculate_median_single(values):
     # Calculate the median for a single set of values
 
@@ -53,6 +57,7 @@ def calculate_median_single(values):
 
     return median
 
+
 def calculate_median(file_path):
     # Read values from the text files and convert to float
     values = read_and_convert(file_path)
@@ -63,6 +68,7 @@ def calculate_median(file_path):
     # Return the medians
     return median
 
+
 def calculate_mean_wrapper(file_paths):
     # Function to calculate mean for multiple files
 
@@ -71,6 +77,7 @@ def calculate_mean_wrapper(file_paths):
 
     # Return the means
     return means
+
 
 def calculate_median_wrapper(file_paths):
     # Function to calculate median for multiple files
@@ -81,15 +88,23 @@ def calculate_median_wrapper(file_paths):
     # Return the medians
     return medians
 
+
 if __name__ == "__main__":
-    file_path_1 = "C:/dev/6ix-pac/output1.txt"
-    file_path_2 = "C:/dev/6ix-pac/output2.txt"
-    file_path_3 = "C:/dev/6ix-pac/output3.txt"
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path_1 = os.path.join(base_dir, "output1.txt")
+    file_path_2 = os.path.join(base_dir, "output2.txt")
+    file_path_3 = os.path.join(base_dir, "output3.txt")
+
+    # This kept throwing an error because C:/dev/ is a specific path
+
+    # file_path_1 = "C:/dev/6ix-pac/output1.txt"
+    # file_path_2 = "C:/dev/6ix-pac/output2.txt"
+    # file_path_3 = "C:/dev/6ix-pac/output3.txt"
 
     means = calculate_mean_wrapper([file_path_1, file_path_2, file_path_3])
     medians = calculate_median_wrapper([file_path_1, file_path_2, file_path_3])
 
-     # Print medians across each life
+    # Print medians across each life
     print(f"Median across life 1: {medians[0]}")
     print(f"Median across life 2: {medians[1]}")
     print(f"Median across life 3: {medians[2]}")

@@ -7,7 +7,9 @@ import (
 	"time"
 	"os"
 	"fmt"
+	"path/filepath"
 )
+
 
 /*
 	NOTE: at 24 ticks/sec, currTicks will experience an integer overflow after
@@ -337,16 +339,32 @@ func (gs *gameState) writeScore(iteration int) {
     // Declare filePath outside of the if-else blocks
     var filePath string
 
-    if iteration == 1 {
-        // Set filePath for iteration 1
-        filePath = "C:/dev/6ix-pac/output1.txt"
-    } else if iteration == 2 {
-        // Set filePath for iteration 2
-        filePath = "C:/dev/6ix-pac/output2.txt"
-    } else {
-        // Set filePath for other iterations
-        filePath = "C:/dev/6ix-pac/output3.txt"
-    }
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if iteration == 1 {
+		// Set filePath for iteration 1
+		filePath = filepath.Join(dir, "output1.txt")
+	} else if iteration == 2 {
+		// Set filePath for iteration 2
+		filePath = filepath.Join(dir, "output2.txt")
+	} else {
+		// Set filePath for other iterations
+		filePath = filepath.Join(dir, "output3.txt")
+	}
+
+    // if iteration == 1 {
+    //     // Set filePath for iteration 1
+    //     filePath = "C:/dev/6ix-pac/output1.txt"
+    // } else if iteration == 2 {
+    //     // Set filePath for iteration 2
+    //     filePath = "C:/dev/6ix-pac/output2.txt"
+    // } else {
+    //     // Set filePath for other iterations
+    //     filePath = "C:/dev/6ix-pac/output3.txt"
+    // }
 
     // Open or create a file for writing
     file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
