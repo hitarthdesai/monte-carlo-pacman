@@ -7,6 +7,10 @@ from heuristic import Heuristic
 from util import location_to_direction
 
 from gameState import GameState, Directions, Location, GameModes
+import sys
+
+if "-elec" in sys.argv:
+    from elec_pac.motors.motor_control import only_dc
 
 
 class DecisionModule:
@@ -162,6 +166,18 @@ class DecisionModule:
 
             # Write back to the server
             self.state.queueAction(4, next_move)
+
+            # Send the message to elec
+            direction_map = {
+                Directions.UP: "N",
+                Directions.LEFT: "W",
+                Directions.DOWN: "S",
+                Directions.RIGHT: "E",
+                Directions.NONE: "NONE",
+            }
+            direction_letter = direction_map[next_move]
+            if "-elec" in sys.argv:
+                only_dc(1, direction_letter, 4)
 
             # Unlock the game state
             self.state.unlock()

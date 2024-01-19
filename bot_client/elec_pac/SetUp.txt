@@ -1,0 +1,13 @@
+Setting up instructions for GitHub cloning
+
+My preferred code editor is VScode so would recommend downloading that and will have steps for that. If you prefer some other editors, lmk and we will figure it 
+
+Steps to setting everything up [feel free to ask questions in Discord and during our meetings]
+Download VScode and Python on your laptop [make sure to add Python to the path during installation]
+Sign into GitHub using VScode
+make a folder on your laptop and clone the repo
+make a file and use the following cmds to push it:
+1. git add . 
+2. git commit -m "<Custom message>"
+3. git push
+and then you should be able to see the file reflected on GitHub

@@ -1,0 +1,20 @@
+This is how you can change the address of the TOF sensors using arduino
+
+Motivation:
+So all TOF have the same i2c address. To access 4 tof sensors, we will need to create multiple buses and cycle between them; or we have to use a multiplexer. To avoid this, we just change the i2c address of the tof sensors.
+
+Steps:
+1)Connect the tof sensor to arduino uno [SDA goes to A4 and SCL to A5]
+2)download the adafruit zip file and upload it to the arduino. Uploading can be done by clicking on sketch and then upload library and then add.zip library
+3)run the check code to see the current i2c address
+4)run the change address (remember to change the i2c address in the code)
+5)run the check code again to see the new i2c address
+
+The i2c address of the tof sensors are as follows:
+N:0x29
+S:0x30
+E:0x31
+W:0x32
+
+Sample website: https://robojax.com/learn/arduino/?vid=robojax_VL53L0X_I2C_address
+includes a video showing how each step is done^

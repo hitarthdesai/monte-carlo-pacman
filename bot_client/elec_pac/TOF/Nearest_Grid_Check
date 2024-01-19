@@ -1,0 +1,80 @@
+import math
+#import random
+
+#test cases 
+grid_boxes = [(10, 10, 10, 10), (11, 11, 11, 11), (12, 12, 12, 12), (13, 13, 13, 13)]
+
+x2= 10
+y2= 10
+z2= 10
+w2= 10
+
+lookup_x = grid_boxes[0][0]
+target_y = grid_boxes[0][1]
+target_z = grid_boxes[0][2]
+target_w = grid_boxes[0][3]
+
+def euclidean_distance(x1, y1, z1, w1, x2, y2 , z2, w2):
+    # Euclidean distance formula
+    return math.sqrt((x1 - x2)**2 + (y1 - y2)**2 + (z1 - z2)**2 + (w1 - w2)**2)
+
+def find_nearest_grid_box(lookup_x, target_y, target_z, target_w, grid_boxes):
+
+    for x, y, z, w in grid_boxes:
+        # Calculate distances for each direction
+        new_error = euclidean_distance(lookup_x, target_y , target_z, target_w, x2, y2, z2, w2)
+
+        # Update nearest grid boxes if a closer one is found
+        error = 10
+        array = 0
+
+        if new_error < error:
+            error = new_error
+            #store the gridbox?
+            # how to return the values from lookup table 
+            lookup_x = grid_boxes[array][0]
+            target_y = grid_boxes[array][1]
+            target_z = grid_boxes[array][2]
+            target_w = grid_boxes[array][3]
+            closest_grid=grid_boxes[array]
+            array = array + 1
+        else:
+            array = array + 1
+            lookup_x = grid_boxes[array][0]
+            target_y = grid_boxes[array][1]
+            target_z = grid_boxes[array][2]
+            target_w = grid_boxes[array][3]
+        
+    return {
+        'error': error,
+        'nearest grid': closest_grid
+    }
+
+#example case of the returning 4 grids that is the nearest to each 4 sides
+lookup_x = 10
+target_y = 11
+target_z = 12
+target_w = 13
+grid_boxes = [(10, 10, 10, 10), (11, 11, 11, 11), (12, 12, 12, 12), (13, 13, 13, 13)]
+
+result = find_nearest_grid_box(lookup_x, target_y, target_z, target_w, grid_boxes)
+print(result)
+
+
+
+#lookup example
+#lookupnum = {10,20,30,40}
+
+#def closest_number_lookup(input, lookupnum):
+#    if not lookupnum:
+#        return None
+#    else:
+#        closestnum= min(lookupnum, key=lambda x: abs(x-input))
+#        return closestnum
+    
+#test case
+#input = 12 
+#result= closest_number_lookup(input, lookupnum)
+#print(f"For input {input}, closest number is: {result}")
+
+    

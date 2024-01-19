@@ -1,0 +1,33 @@
+#lookup table creation function
+#def create_lookup_table(grid_size):
+#    lookup_table = {(x, y): random.randint(1, 100) for x in range(grid_size) for y in range(grid_size)}
+#    return lookup_table
+
+# Example usage:
+target_x = 2
+target_y = 3
+grid_size = 5
+grid_boxes = [(x, y) for x in range(grid_size) for y in range(grid_size)]
+
+# Find the nearest grid box
+nearest_box = find_nearest_grid_box(target_x, target_y, grid_boxes)
+
+# Create a lookup table with random values
+#lookup_table = create_lookup_table(grid_size)
+
+# Check if the input values are working
+#if nearest_box in lookup_table:
+#    result_value = lookup_table[nearest_box]
+#    print(f"The nearest grid box is {nearest_box} with value {result_value}.")
+#else:
+#    print("Error: Nearest grid box not found in the lookup table.")
+
+# Example usage:
+target_x = 2
+target_y = 3
+grid_boxes = [(1, 1), (2, 2), (3, 3), (4, 4), (5, 5)]
+
+result = find_nearest_grid_box(target_x, target_y, grid_boxes)
+print(result)
+
+
