@@ -1,5 +1,5 @@
 from gameState import GameState, Location
-from cluster import Cluster, Clusters
+from cluster import Cluster
 
 
 class Heuristic:
@@ -47,7 +47,7 @@ class Heuristic:
 
         return sum(penalties)
 
-    def cluster_heuristic(self, clusters: Clusters, curr: Location):
+    def cluster_heuristic(self, clusters: list[Cluster], curr: Location):
         # idea: select what cluster region the pellet belongs to, then return the magnitude of that cluster.
         # This is used as a 'discount' of the distance, to incentivise staying in cluster region
 
