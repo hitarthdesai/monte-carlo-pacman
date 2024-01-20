@@ -47,18 +47,22 @@ class Heuristic:
 
         return sum(penalties)
 
-    def cluster_heuristic(self, clusters: list[Cluster], curr: Location):
+    def cluster_heuristic(self, clusters: list[Cluster], curr: list[int]):
         # idea: select what cluster region the pellet belongs to, then return the magnitude of that cluster.
         # This is used as a 'discount' of the distance, to incentivise staying in cluster region
-
-        x_swings, y_swings = clusters[0].x_swings, clusters[0].y_swings
-        n_x, n_y = curr.row, curr.col
+        
+        x_s, y_s = clusters[0].x_swings, clusters[0].y_swings
+        try:
+            n_x, n_y = curr[0], curr[1]
+        except Exception as e:
+            print(f"Error in swings: {e}")
+            return 0
 
         cluster_num = -1
 
         for i in range(len(clusters)):
             # idea: start in cluster region 1. If both elements of diffs negative, pellet in cluster region. If not check another region, until found
-            c_x, c_y = clusters[i].coords.x + x_swings, clusters[i].coords.y + y_swings
+            c_x, c_y = clusters[i].location.row + x_s, clusters[i].location.col + y_s
             diffs = n_x - c_x, n_y - c_y
             if diffs[0] < 0 and diffs[1] < 0:
                 cluster_num = i
@@ -69,9 +73,7 @@ class Heuristic:
             return 0
         return clusters[cluster_num].magnitude
 
-    def get_overall_heuristic(
-        self, clusters: Clusters, curr: Location, target: Location
-    ):
+    def get_overall_heuristic(self, curr: Location, target: Location, clusters=None):
         self.curr = curr
         self.target = target
 
@@ -79,5 +81,5 @@ class Heuristic:
         for h in self.heuristics:
             if h == self.cluster_heuristic:
                 score += h(clusters, curr) / self.num_heuristics
-            score += h() / self.num_heuristics
+            # score += h() / self.num_heuristics
         return score

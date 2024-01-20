@@ -5,7 +5,7 @@ import math
 from algo import Node
 from heuristic import Heuristic
 from util import location_to_direction
-from cluster import Cluster, Clusters
+from cluster import Cluster
 
 from gameState import GameState, Directions, Location, GameModes
 
@@ -40,7 +40,8 @@ class DecisionModule:
     # TODO: Consider chase vs scatter mode.
     def _get_target(self) -> Optional[Location]:
         try:
-            return self.state.find_closest_pellet(self.state.pacmanLoc)
+            # return self.state.find_closest_pellet(self.state.pacmanLoc)
+            return self.find_closest_pellet()
         except Exception as e:
             print(f"Error in finding closest pellet: {e}")
             return self.state.pacmanLoc
@@ -71,22 +72,26 @@ class DecisionModule:
     def _get_heuristic(self, curr: Location, other: Location) -> int:
         cluster_starting_coords = [[7, 8], [7, 23], [20, 8], [20, 23]]
         clusters = [
-            Cluster(coords[0], coords[1])
+            Cluster(coords[0], coords[1], 4)
             for coords in cluster_starting_coords
         ]
+        
+        for cluster in clusters:
+            cluster.location = Location(None)
+            value = (cluster.x << 8) | cluster.y
+            cluster.location.update(value)
+            self.state.updated_magnitude(cluster)
 
-        return self.heuristic.get_overall_heuristic(clusters, curr, other)
-
-    def find_closest_pellet(self, anchor: Location) -> Location:
+        return self.heuristic.get_overall_heuristic(curr, other, clusters)
+    
+    def find_closest_pellet(self) -> Optional[Location]:
         grid_width, grid_height = (27, 31)
         num_clusters = 4  # must be a perfect square
         # cluster_starting_coords = [[7, 8], [7, 23], [20, 8], [20, 23]]
         cluster_starting_coords = list()
 
         # center multiples determine cluster coords. ex if num_clusters = 4, want 2 clusters across, 2 down; divide grid_width into 1/(sqrt(2)+1) = 3 equal sections
-        x_center_multiples, y_center_multiples = int(
-            grid_width / (math.sqrt(num_clusters) + 1)
-        ), int(grid_height / (math.sqrt(num_clusters) + 1))
+        x_center_multiples, y_center_multiples = int(grid_width / (math.sqrt(num_clusters) + 1)), int(grid_height / (math.sqrt(num_clusters) + 1))
         # compute the coords of the center of each cluster
         for i in range(int(math.sqrt(num_clusters))):
             for j in range(int(math.sqrt(num_clusters))):
@@ -95,25 +100,32 @@ class DecisionModule:
 
         # Create cluster objects
         clusters = [
-            Cluster(coords[0], coords[1])
+            Cluster(coords[0], coords[1], 4)
             for coords in cluster_starting_coords
         ]
 
-        pellets: List[Location] = list()
-        # TODO: Here is where I don't know how to get the pellets - this code below needs to convert to new GE.
+        for cluster in clusters:
+            cluster.location = Location(None)
+            value = (cluster.x << 8) | cluster.y
+            cluster.location.update(value)
+            self.state.updated_magnitude(cluster)
 
-        pellets = list()
+        pellets: list[int] = list()
         for x in range(grid_width):
             for y in range(grid_height):
                 if self.state.pelletAt(x, y):
                     pellets.append((x, y))
-
-        # Metric for closeness: Manhattan distance
-        return min(
-            pellets,
-            key=lambda point: anchor.distance_to(point)
-            - self.heuristic.cluster_heuristic(point, clusters)
-        )
+        try:
+            # Metric for closeness: Manhattan distance
+            return min(
+                pellets,
+                key=lambda point: self.state.pacmanLoc.distance_to_overload(point)
+                - self.heuristic.cluster_heuristic(clusters, point)
+            )
+        except Exception as e:
+            print(f"Error in return: {e}")
+            return self.state.pacmanLoc
+        
 
     def algo(self, start: Location, target: Location) -> List[Location]:
         """
