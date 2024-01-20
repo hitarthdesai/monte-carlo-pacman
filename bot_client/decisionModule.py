@@ -48,9 +48,12 @@ class DecisionModule:
 
     def _get_next_move(self) -> Directions:
         target = self._get_target()
+        print(target)
+        targetLoc = Location(self.state)
+        targetLoc.update((target[0] << 8) | target[1])
 
         start = self.state.pacmanLoc
-        path = self.algo(start, target)
+        path = self.algo(start, targetLoc)
         if path is not None and len(path) > 0:
             _move = path[0]
 
@@ -144,18 +147,22 @@ class DecisionModule:
         heapq.heappush(open_list, head)
 
         while open_list:
+            
             curr = heapq.heappop(open_list)
-
+            
             # Check if the current node is the target node
             if curr.position.at(target.row, target.col):
                 path: List[Location] = []
                 # Reconstruct the path by following parent pointers
                 while curr.position != start:
-                    path.append(curr.position)
-                    curr = curr.parent
-
+                    try:
+                        path.append(curr.position)
+                        curr = curr.parent
+                    except Exception as e:
+                        print(f"EEEEEE {e}")
                 path.reverse()
                 return path
+            
 
             # TODO: Needs to be made serializable
             closed_set.add(curr.position)
