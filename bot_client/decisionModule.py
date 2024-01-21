@@ -185,7 +185,7 @@ class DecisionModule:
                 if str(neighbor) in closed_set:
                     continue
 
-                print(f"neighbor: {neighbor}")
+                # print(f"neighbor: {neighbor}")
 
                 loc = Location(self.state)
                 loc.update((neighbor[0] << 8) | neighbor[1])

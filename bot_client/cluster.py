@@ -1,5 +1,4 @@
 from typing import List
-import numpy as np
 
 GRID_WIDTH = 27
 GRID_HEIGHT = 31
