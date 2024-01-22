@@ -1,10 +1,11 @@
 import asyncio
 import heapq
 from typing import Optional, List
-
+import math
 from algo import Node
 from heuristic import Heuristic
 from util import location_to_direction
+from cluster import Cluster
 
 from gameState import GameState, Directions, Location, GameModes
 import sys
@@ -43,16 +44,23 @@ class DecisionModule:
     # TODO: Consider chase vs scatter mode.
     def _get_target(self) -> Optional[Location]:
         try:
-            return self.state.find_closest_pellet(self.state.pacmanLoc)
+            # return self.state.find_closest_pellet(self.state.pacmanLoc)
+            return self.find_closest_pellet()
         except Exception as e:
             print(f"Error in finding closest pellet: {e}")
             return self.state.pacmanLoc
 
     def _get_next_move(self) -> Directions:
         target = self._get_target()
+        if type(target) is not Location:
+            targetLoc = Location(self.state)
+            targetLoc.update((target[0] << 8) | target[1])
+            target = targetLoc
+        else:
+            targetLoc = target
 
         start = self.state.pacmanLoc
-        path = self.algo(start, target)
+        path = self.algo(start, targetLoc)
         if path is not None and len(path) > 0:
             _move = path[0]
 
@@ -72,7 +80,62 @@ class DecisionModule:
         return Directions.NONE
 
     def _get_heuristic(self, curr: Location, other: Location) -> int:
-        return self.heuristic.get_overall_heuristic(curr, other)
+        cluster_starting_coords = [[7, 8], [7, 23], [20, 8], [20, 23]]
+        clusters = [
+            Cluster(coords[0], coords[1], 4) for coords in cluster_starting_coords
+        ]
+
+        for cluster in clusters:
+            cluster.location = Location(None)
+            value = (cluster.x << 8) | cluster.y
+            cluster.location.update(value)
+            self.state.updated_magnitude(cluster)
+
+        return self.heuristic.get_overall_heuristic(curr, other, clusters)
+
+    def find_closest_pellet(self) -> Optional[Location]:
+        grid_width, grid_height = (31, 31)
+        num_clusters = 4  # must be a perfect square
+        # cluster_starting_coords = [[7, 8], [7, 23], [20, 8], [20, 23]]
+        cluster_starting_coords = list()
+
+        # center multiples determine cluster coords. ex if num_clusters = 4, want 2 clusters across, 2 down; divide grid_width into 1/(sqrt(2)+1) = 3 equal sections
+        x_center_multiples, y_center_multiples = int(
+            grid_width / (math.sqrt(num_clusters) + 1)
+        ), int(grid_height / (math.sqrt(num_clusters) + 1))
+        # compute the coords of the center of each cluster
+        for i in range(int(math.sqrt(num_clusters))):
+            for j in range(int(math.sqrt(num_clusters))):
+                coords = [(i + 1) * x_center_multiples, (j + 1) * y_center_multiples]
+                cluster_starting_coords.append(coords)
+
+        # Create cluster objects
+        clusters = [
+            Cluster(coords[0], coords[1], 4) for coords in cluster_starting_coords
+        ]
+
+        for cluster in clusters:
+            cluster.location = Location(None)
+            value = (cluster.x << 8) | cluster.y
+            cluster.location.update(value)
+            self.state.updated_magnitude(cluster)
+
+        pellets: list[int] = list()
+        for x in range(grid_width):
+            for y in range(grid_height):
+                if self.state.pelletAt(x, y):
+                    pellets.append((x, y))
+
+        try:
+            # Metric for closeness: Manhattan distance
+            return min(
+                pellets,
+                key=lambda point: self.state.pacmanLoc.distance_to_overload(point)
+                - self.heuristic.cluster_heuristic(clusters, point),
+            )
+        except Exception as e:
+            print(f"Error in return: {e}")
+            return self.state.pacmanLoc
 
     def algo(self, start: Location, target: Location) -> List[Location]:
         """
@@ -80,7 +143,6 @@ class DecisionModule:
         """
         open_list: List[Node] = list()  # Priority queue for open nodes
         closed_set = set()  # Set to store visited nodes
-
         # Create the start node and initialize its costs
         head = Node(start, None)
         head.g = 0
@@ -92,20 +154,21 @@ class DecisionModule:
 
         while open_list:
             curr = heapq.heappop(open_list)
-
             # Check if the current node is the target node
             if curr.position.at(target.row, target.col):
                 path: List[Location] = []
                 # Reconstruct the path by following parent pointers
                 while curr.position != start:
-                    path.append(curr.position)
-                    curr = curr.parent
-
+                    try:
+                        path.append(curr.position)
+                        curr = curr.parent
+                    except Exception as e:
+                        print(f"EEEEEE {e}")
                 path.reverse()
                 return path
 
             # TODO: Needs to be made serializable
-            closed_set.add(curr.position)
+            closed_set.add(Location.__str__(curr.position))
 
             all_neighbors = map(
                 lambda dir: (curr.position.row + dir[0], curr.position.col + dir[1]),
@@ -123,8 +186,10 @@ class DecisionModule:
             )
 
             for neighbor in valid_neighbors:
-                if neighbor in closed_set:
+                if str(neighbor) in closed_set:
                     continue
+
+                # print(f"neighbor: {neighbor}")
 
                 loc = Location(self.state)
                 loc.update((neighbor[0] << 8) | neighbor[1])
