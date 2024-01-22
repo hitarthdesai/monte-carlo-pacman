@@ -163,7 +163,8 @@ class DecisionModule:
                         path.append(curr.position)
                         curr = curr.parent
                     except Exception as e:
-                        print(f"EEEEEE {e}")
+                        print(f"Error: {e}")
+                        break
                 path.reverse()
                 return path
 
@@ -188,8 +189,6 @@ class DecisionModule:
             for neighbor in valid_neighbors:
                 if str(neighbor) in closed_set:
                     continue
-
-                # print(f"neighbor: {neighbor}")
 
                 loc = Location(self.state)
                 loc.update((neighbor[0] << 8) | neighbor[1])
