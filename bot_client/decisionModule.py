@@ -50,49 +50,6 @@ class DecisionModule:
             print(f"Error in finding closest pellet: {e}")
             return self.state.pacmanLoc
 
-    def _get_next_move(self) -> Directions:
-        target = self._get_target()
-        if type(target) is not Location:
-            targetLoc = Location(self.state)
-            targetLoc.update((target[0] << 8) | target[1])
-            target = targetLoc
-        else:
-            targetLoc = target
-
-        start = self.state.pacmanLoc
-        path = self.algo(start, targetLoc)
-        if path is not None and len(path) > 0:
-            _move = path[0]
-
-            # Remove super pellet if we're on it
-            if self.state.superPelletAt(_move.row, _move.col):
-                self.superPellets = list(
-                    filter(
-                        lambda sp: not (sp.row == _move.row and sp.col == _move.col),
-                        self.superPellets,
-                    )
-                )
-
-            move = location_to_direction(start, _move)
-            return move
-
-        print("No path found 🥲")
-        return Directions.NONE
-
-    def _get_heuristic(self, curr: Location, other: Location) -> int:
-        cluster_starting_coords = [[7, 8], [7, 23], [20, 8], [20, 23]]
-        clusters = [
-            Cluster(coords[0], coords[1], 4) for coords in cluster_starting_coords
-        ]
-
-        for cluster in clusters:
-            cluster.location = Location(None)
-            value = (cluster.x << 8) | cluster.y
-            cluster.location.update(value)
-            self.state.updated_magnitude(cluster)
-
-        return self.heuristic.get_overall_heuristic(curr, other, clusters)
-
     def _find_closest_pellet(self) -> Optional[Location]:
         grid_width, grid_height = 31, 31
         num_clusters = 4
