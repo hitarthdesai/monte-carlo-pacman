@@ -29,24 +29,17 @@ class DecisionModule:
         self.state = state
         self.heuristic = Heuristic(state)
 
-        # Locations of super pellets
-        # TODO: There has to be a better way of doing this
-        self.superPellets: List[Location] = [None] * 4
-        self.superPellets[0] = Location(self.state)
-        self.superPellets[0].update((3 << 8) | 1)
-        self.superPellets[1] = Location(self.state)
-        self.superPellets[1].update((3 << 8) | 26)
-        self.superPellets[2] = Location(self.state)
-        self.superPellets[2].update((23 << 8) | 1)
-        self.superPellets[3] = Location(self.state)
-        self.superPellets[3].update((23 << 8) | 26)
+        self.superPellets: List[Location] = []  # Initialize as an empty list
+        self._initialize_super_pellets()
 
     def _initialize_super_pellets(self):
-        # Initialize the locations of super pellets
+        # Initialize the locations of super pellets dynamically
         super_pellet_positions = [(3, 1), (3, 26), (23, 1), (23, 26)]
-        self.superPellets = [
-            Location(self.state, row, col) for row, col in super_pellet_positions
-        ]
+        self.superPellets = [Location(self.state) for _ in super_pellet_positions]
+
+        # Update each super pellet location
+        for location, (row, col) in zip(self.superPellets, super_pellet_positions):
+            location.update((row << 8) | col)
 
     # TODO: Consider chase vs scatter mode.
     def _get_target(self) -> Optional[Location]:
