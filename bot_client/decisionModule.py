@@ -13,6 +13,8 @@ import sys
 if "-elec" in sys.argv:
     from elec_pac.motors.motor_control import only_dc
 
+DISTANCE_THRESHOLD = 5
+
 
 class DecisionModule:
     """
@@ -50,6 +52,17 @@ class DecisionModule:
             print(f"Error in finding closest pellet: {e}")
             return self.state.pacmanLoc
 
+    def _is_pellet_safe(self, pellet: Location, clusters: List[Cluster]) -> bool:
+        if type(pellet) is not Location:
+            pelletLoc = Location(self.state)
+            pelletLoc.update((pellet[0] << 8) | pellet[1])
+            pellet = pelletLoc
+
+        normal_ghosts = [g for g in self.state.ghosts if not g.isFrightened()]
+        return all(
+            pellet.distance_to(g.location) > DISTANCE_THRESHOLD for g in normal_ghosts
+        )
+
     def _find_closest_pellet(self) -> Optional[Location]:
         grid_width, grid_height = 31, 31
         num_clusters = 4
@@ -62,6 +75,11 @@ class DecisionModule:
         self._initialize_clusters(clusters)
 
         pellets = self._get_pellets_coords(grid_width, grid_height)
+
+        pellets = [
+            pellet for pellet in pellets if self._is_pellet_safe(pellet, clusters)
+        ]
+
         try:
             return min(
                 pellets,
@@ -70,7 +88,7 @@ class DecisionModule:
             )
         except Exception as e:
             print(f"Error in return: {e}")
-            return self.state.pacmanLoc
+            return self._get_away_from_ghosts_when_cant_find_pellets()
 
     def _calculate_cluster_starting_coords(self, grid_width, grid_height, num_clusters):
         x_center_multiples, y_center_multiples = int(
@@ -98,6 +116,69 @@ class DecisionModule:
             if self.state.pelletAt(x, y)
         ]
         return pellets
+
+    def _get_new_location(self, current_location, direction):
+        if direction == Directions.UP:
+            return (current_location.row, current_location.col + 1)
+        elif direction == Directions.DOWN:
+            return (current_location.row, current_location.col - 1)
+        elif direction == Directions.LEFT:
+            return (current_location.row - 1, current_location.col)
+        elif direction == Directions.RIGHT:
+            return (current_location.row + 1, current_location.col)
+
+    def _get_new_location_as_location(self, current_location, direction):
+        target = self._get_new_location(current_location, direction)
+        if type(target) is not Location:
+            targetLoc = Location(self.state)
+            targetLoc.update((target[0] << 8) | target[1])
+            target = targetLoc
+
+        return target
+
+    def _get_away_from_ghosts_when_cant_find_pellets(self):
+        print("No pellets found, running away from ghosts")
+        ghost_plans = [g.guessPlan() for g in self.state.ghosts]
+        normal_ghosts = [g for g in self.state.ghosts if not g.isFrightened()]
+
+        possible_moves = [
+            Directions.UP,
+            Directions.DOWN,
+            Directions.LEFT,
+            Directions.RIGHT,
+        ]
+
+        possible_moves = [
+            move
+            for move in possible_moves
+            if not self.state.wallAt(
+                *self._get_new_location(self.state.pacmanLoc, move)
+            )
+        ]
+
+        # Remove any moves that would lead to a location that a ghost is planning to move to
+        possible_moves = [
+            move
+            for move in possible_moves
+            if self._get_new_location(self.state.pacmanLoc, move) not in ghost_plans
+        ]
+
+        # If there are no possible moves, stay in the current location
+        if not possible_moves:
+            return self.state.pacmanLoc
+
+        best_move = max(
+            possible_moves,
+            key=lambda move: min(
+                self._get_new_location_as_location(
+                    self.state.pacmanLoc, move
+                ).distance_to(g.location)
+                for g in normal_ghosts
+            ),
+        )
+
+        # Return the new location
+        return self._get_new_location(self.state.pacmanLoc, best_move)
 
     def _get_next_move(self) -> Directions:
         target = self._get_target()
