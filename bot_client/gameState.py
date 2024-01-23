@@ -207,7 +207,7 @@ class Location:
             print(f"self: {self}")
             print(f"other: {other}")
             return 0
-        
+
     def distance_to_overload(self, other: int) -> float:
         """
         Determine the manhattan distance to a row and column
@@ -399,6 +399,8 @@ class Ghost:
 
         # Update the best direction to be the plan
         self.plannedDirection = minDir if (not self.isFrightened()) else maxDir
+
+        return minDir if (not self.isFrightened()) else maxDir
 
 
 class GameStateCompressed:
@@ -926,6 +928,7 @@ class GameState:
 
         # Return that Pacman was safe during this transition
         return True
+
     # old base algo.
     # def find_closest_pellet(self, anchor: Location) -> Optional[Location]:
     #     queue = deque([(anchor.row, anchor.col)])
@@ -956,14 +959,19 @@ class GameState:
     #     return None
 
     def updated_magnitude(self, cluster: Cluster):
-        for i in range(cluster.location.row - cluster.x_swings, cluster.location.row + cluster.x_swings):
-            for j in range(cluster.location.col - cluster.y_swings, cluster.location.col + cluster.y_swings):
+        for i in range(
+            cluster.location.row - cluster.x_swings,
+            cluster.location.row + cluster.x_swings,
+        ):
+            for j in range(
+                cluster.location.col - cluster.y_swings,
+                cluster.location.col + cluster.y_swings,
+            ):
                 if self.pelletAt(i, j):
                     if (x := self.pacmanLoc.distance_to(cluster.location)) != 0:
                         cluster.magnitude += 100 / (x**2)
                     else:
                         cluster.magnitude += 100
-    
 
     # def find_closest_pellet(self, anchor: Location) -> Optional[Location]:
     #     grid_width, grid_height = (27, 31)
