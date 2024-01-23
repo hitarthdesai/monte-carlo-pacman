@@ -50,6 +50,18 @@ class DecisionModule:
             print(f"Error in finding closest pellet: {e}")
             return self.state.pacmanLoc
 
+    def _is_pellet_safe(self, pellet: Location, clusters: List[Cluster]) -> bool:
+        if type(pellet) is not Location:
+            pelletLoc = Location(self.state)
+            pelletLoc.update((pellet[0] << 8) | pellet[1])
+            pellet = pelletLoc
+
+        distance_threshold = 5
+        normal_ghosts = [g for g in self.state.ghosts if not g.isFrightened()]
+        return all(
+            pellet.distance_to(g.location) > distance_threshold for g in normal_ghosts
+        )
+
     def _find_closest_pellet(self) -> Optional[Location]:
         grid_width, grid_height = 31, 31
         num_clusters = 4
@@ -62,6 +74,11 @@ class DecisionModule:
         self._initialize_clusters(clusters)
 
         pellets = self._get_pellets_coords(grid_width, grid_height)
+
+        pellets = [
+            pellet for pellet in pellets if self._is_pellet_safe(pellet, clusters)
+        ]
+
         try:
             return min(
                 pellets,
