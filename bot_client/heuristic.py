@@ -1,6 +1,8 @@
 from gameState import GameState, Location
 from cluster import Cluster
 
+DISTANCE_THRESHOLD = 5
+
 
 class Heuristic:
     def __init__(self, state: GameState):
@@ -20,15 +22,14 @@ class Heuristic:
         """
         Avoid being too close to normal ghosts
         """
-        distance_threshold = 5
 
         normal_ghosts = [g for g in self.state.ghosts if not g.isFrightened()]
         distances = [
-            min(distance_threshold, self.curr.distance_to(g.location))
+            min(DISTANCE_THRESHOLD, self.curr.distance_to(g.location))
             for g in normal_ghosts
         ]
 
-        penalties = [distance_threshold - d for d in distances]
+        penalties = [DISTANCE_THRESHOLD - d for d in distances]
 
         return sum(penalties)
 
@@ -36,13 +37,12 @@ class Heuristic:
         """
         Prefers being close to scared ghosts
         """
-        distance_threshold = 5
         scared_ghosts = [g for g in self.state.ghosts if g.isFrightened()]
         distances = [
-            min(distance_threshold, self.curr.distance_to(g.location))
+            min(DISTANCE_THRESHOLD, self.curr.distance_to(g.location))
             for g in scared_ghosts
         ]
-        bonuses = [distance_threshold - d for d in distances]
+        bonuses = [DISTANCE_THRESHOLD - d for d in distances]
         return sum(bonuses)
 
     def cluster_heuristic(self, clusters: list[Cluster], curr):

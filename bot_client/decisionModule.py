@@ -13,6 +13,8 @@ import sys
 if "-elec" in sys.argv:
     from elec_pac.motors.motor_control import only_dc
 
+DISTANCE_THRESHOLD = 5
+
 
 class DecisionModule:
     """
@@ -56,10 +58,9 @@ class DecisionModule:
             pelletLoc.update((pellet[0] << 8) | pellet[1])
             pellet = pelletLoc
 
-        distance_threshold = 5
         normal_ghosts = [g for g in self.state.ghosts if not g.isFrightened()]
         return all(
-            pellet.distance_to(g.location) > distance_threshold for g in normal_ghosts
+            pellet.distance_to(g.location) > DISTANCE_THRESHOLD for g in normal_ghosts
         )
 
     def _find_closest_pellet(self) -> Optional[Location]:
