@@ -18,6 +18,10 @@ from terminalColors import *
 # Server messages
 from serverMessage import ServerMessage
 
+from cluster import Cluster
+
+import math
+
 
 class GameModes(IntEnum):
     """
@@ -196,7 +200,22 @@ class Location:
         """
 
         try:
+            # print(self.row, self.col, other.row, other.col)
             return abs(self.row - other.row) + abs(self.col - other.col)
+        except Exception as e:
+            print(f"Error in distance_to(): {e}")
+            print(f"self: {self}")
+            print(f"other: {other}")
+            return 0
+
+    def distance_to_overload(self, other: int) -> float:
+        """
+        Determine the manhattan distance to a row and column
+        """
+
+        try:
+            # print(self.row, self.col, other.row, other.col)
+            return abs(self.row - other[0]) + abs(self.col - other[1])
         except Exception as e:
             print(f"Error in distance_to(): {e}")
             print(f"self: {self}")
@@ -380,6 +399,8 @@ class Ghost:
 
         # Update the best direction to be the plan
         self.plannedDirection = minDir if (not self.isFrightened()) else maxDir
+
+        return minDir if (not self.isFrightened()) else maxDir
 
 
 class GameStateCompressed:
@@ -908,33 +929,88 @@ class GameState:
         # Return that Pacman was safe during this transition
         return True
 
-    def find_closest_pellet(self, anchor: Location) -> Optional[Location]:
-        queue = deque([(anchor.row, anchor.col)])
-        visited = set([anchor])
+    # old base algo.
+    # def find_closest_pellet(self, anchor: Location) -> Optional[Location]:
+    #     queue = deque([(anchor.row, anchor.col)])
+    #     visited = set([anchor])
 
-        while queue:
-            pos = queue.popleft()
-            row, col = pos
+    #     while queue:
+    #         pos = queue.popleft()
+    #         row, col = pos
 
-            if self.pelletAt(row, col) is True:
-                loc = Location(self)
-                loc.update((row << 8) | col)
-                return loc
+    #         if self.pelletAt(row, col) is True:
+    #             loc = Location(self)
+    #             loc.update((row << 8) | col)
+    #             return loc
 
-            for dr, dc in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
-                new_row, new_col = row + dr, col + dc
+    #         for dr, dc in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+    #             new_row, new_col = row + dr, col + dc
 
-                if (
-                    0 <= new_row < 31
-                    and 0 <= new_col < 28
-                    and self.wallAt(new_row, new_col) is False
-                    and (new_row, new_col) not in visited
-                ):
-                    queue.append((new_row, new_col))
-                    visited.add((new_row, new_col))
+    #             if (
+    #                 0 <= new_row < 31
+    #                 and 0 <= new_col < 28
+    #                 and self.wallAt(new_row, new_col) is False
+    #                 and (new_row, new_col) not in visited
+    #             ):
+    #                 queue.append((new_row, new_col))
+    #                 visited.add((new_row, new_col))
 
-        print("No pellet found 🥲")
-        return None
+    #     print("No pellet found 🥲")
+    #     return None
+
+    def updated_magnitude(self, cluster: Cluster):
+        for i in range(
+            cluster.location.row - cluster.x_swings,
+            cluster.location.row + cluster.x_swings,
+        ):
+            for j in range(
+                cluster.location.col - cluster.y_swings,
+                cluster.location.col + cluster.y_swings,
+            ):
+                if self.pelletAt(i, j):
+                    if (x := self.pacmanLoc.distance_to(cluster.location)) != 0:
+                        cluster.magnitude += 100 / (x**2)
+                    else:
+                        cluster.magnitude += 100
+
+    # def find_closest_pellet(self, anchor: Location) -> Optional[Location]:
+    #     grid_width, grid_height = (27, 31)
+    #     num_clusters = 4  # must be a perfect square
+    #     # cluster_starting_coords = [[7, 8], [7, 23], [20, 8], [20, 23]]
+    #     cluster_starting_coords = list()
+
+    #     # center multiples determine cluster coords. ex if num_clusters = 4, want 2 clusters across, 2 down; divide grid_width into 1/(sqrt(2)+1) = 3 equal sections
+    #     x_center_multiples, y_center_multiples = int(grid_width / (math.sqrt(num_clusters) + 1)), int(grid_height / (math.sqrt(num_clusters) + 1))
+    #     # compute the coords of the center of each cluster
+    #     for i in range(int(math.sqrt(num_clusters))):
+    #         for j in range(int(math.sqrt(num_clusters))):
+    #             coords = [(i + 1) * x_center_multiples, (j + 1) * y_center_multiples]
+    #             cluster_starting_coords.append(coords)
+
+    #     # Create cluster objects
+    #     clusters = [
+    #         Cluster(coords[0], coords[1], num_clusters)
+    #         for coords in cluster_starting_coords
+    #     ]
+
+    #     for cluster in clusters:
+    #         cluster.location = Location(None)
+    #         value = (cluster.x << 8) | cluster.y
+    #         cluster.location.update(value)
+    #         self.updated_magnitude(cluster)
+
+    #     pellets: list[Location] = list()
+    #     for x in range(grid_width):
+    #         for y in range(grid_height):
+    #             if self.pelletAt(x, y):
+    #                 pellets.append((x, y))
+
+    #     # Metric for closeness: Manhattan distance
+    #     return min(
+    #         pellets,
+    #         key=lambda point: anchor.distance_to(point)
+    #         - self.heuristic.cluster_heuristic(point, clusters)
+    #     )
 
 
 def compressGameState(state: GameState) -> GameStateCompressed:
