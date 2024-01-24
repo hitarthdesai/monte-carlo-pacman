@@ -61,11 +61,11 @@ def gradual_speed_change(
 
 def move_direction_static(direction, target_steps, encoder1, encoder2):
     while abs(encoder1.steps) < target_steps:
-        print("using encoder 1 to move\n")
+        #print("using encoder 1 to move\n")
         control_motor_speed(direction, 1.0)
 
     while abs(encoder2.steps) < target_steps:
-        print("using encoder 2 to move\n")
+        #print("using encoder 2 to move\n")
         control_motor_speed(direction, 1.0)
 
 
@@ -77,10 +77,8 @@ def move_robot(num_blocks, direction, acceleration=4):
 
     target_steps = int(steps_per_block * num_blocks)
 
-    print(
-        f"Moving {num_blocks} block(s) {direction} without gradual acceleration {acceleration}"
-    )
-    print(f"Target steps: {target_steps}")
+    #print(f"Moving {num_blocks} block(s) {direction} without gradual acceleration {acceleration}")
+    #print(f"Target steps: {target_steps}")
 
     if direction == "N":
         move_direction_static(direction, target_steps, encoderE, encoderW)
