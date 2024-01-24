@@ -119,3 +119,8 @@ def only_dc(num_blocks, direction, acceleration):
         motorW.forward()
         sleep(1)
         motorW.stop()
+
+    motorN.stop()
+    motorE.stop()
+    motorS.stop()
+    motorW.stop()
