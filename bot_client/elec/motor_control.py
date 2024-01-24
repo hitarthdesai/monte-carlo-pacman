@@ -83,13 +83,13 @@ def move_robot(num_blocks, direction, acceleration=4):
     print(f"Target steps: {target_steps}")
 
     if direction == "N":
-        move_direction_static(direction, encoderE, encoderW)
+        move_direction_static(direction, target_steps, encoderE, encoderW)
     elif direction == "S":
-        move_direction_static(direction, encoderW, encoderE)
+        move_direction_static(direction, target_steps, encoderW, encoderE)
     elif direction == "E":
-        move_direction_static(direction, encoderN, encoderS)
+        move_direction_static(direction, target_steps, encoderN, encoderS)
     elif direction == "W":
-        move_direction_static(direction, encoderS, encoderN)
+        move_direction_static(direction, target_steps, encoderS, encoderN)
 
     print("Done moving")
     encoderN.steps = 0
