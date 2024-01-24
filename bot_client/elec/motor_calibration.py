@@ -3,7 +3,7 @@ from motor_control import control_motor_speed
 
 # In this file we will be checking motor calibration
 # we will have two
-check_dc = True
+check_dc = False
 check_encoder = True
 # 1. dc motor is connected properly  
 if check_dc:
