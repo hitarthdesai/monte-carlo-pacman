@@ -34,19 +34,19 @@ if check_encoder:
     encoderS.steps = 0
     print("Moving north 1 block using E encoder")
     while abs(encoderE.steps) < steps_per_block:
-        print(f"encoderE.steps: {encoderE.steps}")
+        #print(f"encoderE.steps: {encoderE.steps}")
         control_motor_speed("N", 1.0)
     print("Moving south 1 block using W encoder")
     while abs(encoderW.steps) < steps_per_block:
-        print(f"encoderW.steps: {encoderW.steps}")
+        #print(f"encoderW.steps: {encoderW.steps}")
         control_motor_speed("S", 1.0)
     print("Moving east 1 block using N encoder")
     while abs(encoderN.steps) < steps_per_block:
-        print(f"encoderN.steps: {encoderN.steps}")
+        #print(f"encoderN.steps: {encoderN.steps}")
         control_motor_speed("E", 1.0)
     print("Moving west 1 block using S encoder")
     while abs(encoderS.steps) < steps_per_block:
-        print(f"encoderS.steps: {encoderS.steps}")
+        #print(f"encoderS.steps: {encoderS.steps}")
         control_motor_speed("W", 1.0)
     print("encoder test is complete")
     motorN.stop()
