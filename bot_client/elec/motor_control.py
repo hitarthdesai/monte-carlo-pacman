@@ -92,6 +92,10 @@ def move_robot(num_blocks, direction, acceleration=4):
     encoderE.steps = 0
     encoderW.steps = 0
     encoderS.steps = 0
+    motorN.stop()
+    motorE.stop()
+    motorS.stop()
+    motorW.stop()
 
     
 
