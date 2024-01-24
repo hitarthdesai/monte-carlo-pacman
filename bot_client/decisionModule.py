@@ -11,7 +11,6 @@ from gameState import GameState, Directions, Location, GameModes
 import sys
 
 if "-elec" in sys.argv:
-    from elec.motor_parameters import *
     from elec.motor_control import only_dc
 
 DISTANCE_THRESHOLD = 5

@@ -1,4 +1,5 @@
-from motor_parameters import *
+from elec.motor_parameters import *
+
 
 def control_motor_speed(direction, speed):
     if direction == "N":
@@ -57,11 +58,12 @@ def gradual_speed_change(
     except KeyboardInterrupt:
         pass
 
+
 def move_direction_static(direction, target_steps, encoder1, encoder2):
     while abs(encoder1.steps) < target_steps:
         print("using encoder 1 to move\n")
         control_motor_speed(direction, 1.0)
-    
+
     while abs(encoder2.steps) < target_steps:
         print("using encoder 2 to move\n")
         control_motor_speed(direction, 1.0)
@@ -75,7 +77,9 @@ def move_robot(num_blocks, direction, acceleration=4):
 
     target_steps = int(steps_per_block * num_blocks)
 
-    print(f"Moving {num_blocks} block(s) {direction} without gradual acceleration {acceleration}")
+    print(
+        f"Moving {num_blocks} block(s) {direction} without gradual acceleration {acceleration}"
+    )
     print(f"Target steps: {target_steps}")
 
     if direction == "N":
@@ -86,14 +90,12 @@ def move_robot(num_blocks, direction, acceleration=4):
         move_direction_static(direction, encoderN, encoderS)
     elif direction == "W":
         move_direction_static(direction, encoderS, encoderN)
-    
+
     print("Done moving")
     encoderN.steps = 0
     encoderE.steps = 0
     encoderW.steps = 0
     encoderS.steps = 0
-
-    
 
 
 def only_dc(num_blocks, direction, acceleration):
