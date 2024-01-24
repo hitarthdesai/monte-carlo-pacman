@@ -4,7 +4,7 @@ from motor_control import control_motor_speed
 # In this file we will be checking motor calibration
 # we will have two
 check_dc = False
-check_encoder = True
+check_encoder = False
 # 1. dc motor is connected properly
 if check_dc:
     print("0.5s movement in each direction")
@@ -49,7 +49,9 @@ if check_encoder:
         # print(f"encoderS.steps: {encoderS.steps}")
         control_motor_speed("W", 1.0)
     print("encoder test is complete")
-    motorN.stop()
-    motorE.stop()
-    motorS.stop()
-    motorW.stop()
+
+motorN.stop()
+motorE.stop()
+motorS.stop()
+motorW.stop()
+
