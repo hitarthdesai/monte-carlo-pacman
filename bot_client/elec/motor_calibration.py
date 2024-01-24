@@ -49,3 +49,7 @@ if check_encoder:
         print(f"encoderS.steps: {encoderS.steps}")
         control_motor_speed("W", 1.0)
     print("encoder test is complete")
+    motorN.stop()
+    motorE.stop()
+    motorS.stop()
+    motorW.stop()
