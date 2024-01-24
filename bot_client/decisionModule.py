@@ -274,7 +274,6 @@ class DecisionModule:
 
             self.state.lock()
             next_move = self._get_next_move()
-            self.state.queueAction(4, next_move)
 
             direction_map = {
                 Directions.UP: "N",
@@ -285,6 +284,7 @@ class DecisionModule:
             }
             direction_letter = direction_map[next_move]
             if "-elec" in sys.argv:
-                move_robot(1, direction_letter, 4)
+                move_robot(1, direction_letter, 10)
 
+            self.state.queueAction(4, next_move)
             self.state.unlock()
