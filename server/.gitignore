@@ -1,2 +1,9 @@
 *.exe
 pacbot_server
+
+venv/*
+**/__pycache__/
+
+output1.txt
+output2.txt
+output3.txt
