@@ -11,7 +11,7 @@ from gameState import GameState, Directions, Location, GameModes
 import sys
 
 if "-elec" in sys.argv:
-    from elec.motor_control import only_dc
+    from elec.motor_control import move_robot
 
 DISTANCE_THRESHOLD = 5
 
@@ -285,6 +285,6 @@ class DecisionModule:
             }
             direction_letter = direction_map[next_move]
             if "-elec" in sys.argv:
-                only_dc(1, direction_letter, 4)
+                move_robot(1, direction_letter, 4)
 
             self.state.unlock()
