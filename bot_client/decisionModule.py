@@ -11,7 +11,7 @@ from gameState import GameState, Directions, Location, GameModes
 import sys
 
 if "-elec" in sys.argv:
-    from motor_control import move_robot
+    from elec_motor_control import move_robot
 
 DISTANCE_THRESHOLD = 5
 
