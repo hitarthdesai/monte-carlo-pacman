@@ -92,7 +92,7 @@ def move_robot(num_blocks, direction, acceleration=4):
     elif direction == "W":
         move_direction_static(direction, target_steps, encoderS, encoderN)
 
-    print("Done moving")
+    #print("Done moving")
     encoderN.steps = 0
     encoderE.steps = 0
     encoderW.steps = 0
