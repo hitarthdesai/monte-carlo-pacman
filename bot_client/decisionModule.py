@@ -283,8 +283,9 @@ class DecisionModule:
                 Directions.NONE: "NONE",
             }
             direction_letter = direction_map[next_move]
+
             if "-elec" in sys.argv:
-                move_robot(1, direction_letter, 4)
+                move_robot(10, direction_map["W"], 4)
 
             self.state.queueAction(4, next_move)
             self.state.unlock()
