@@ -1,22 +1,4 @@
-from gpiozero import Motor, RotaryEncoder
-from time import sleep
-
-# Motor driver connections
-motorN = Motor(forward=17, backward=27)
-motorE = Motor(forward=10, backward=9)
-motorS = Motor(forward=0, backward=5)
-motorW = Motor(forward=13, backward=19)
-
-# Quadrature encoder connections
-encoderN = RotaryEncoder(14, 15, max_steps=2500, wrap=True)
-encoderE = RotaryEncoder(23, 24, max_steps=2500, wrap=True)
-encoderS = RotaryEncoder(1, 12, max_steps=2500, wrap=True)
-encoderW = RotaryEncoder(16, 20, max_steps=2500, wrap=True)
-
-wheel_diameter = 1.850394
-wheel_circumf = 3.141593 * wheel_diameter
-steps_per_rev = 90
-steps_per_block = (7 * steps_per_rev) / wheel_circumf
+from elec_motor_parameters import *
 
 
 def control_motor_speed(direction, speed):
@@ -76,13 +58,17 @@ def gradual_speed_change(
     except KeyboardInterrupt:
         pass
 
+
 def move_direction_static(direction, target_steps, encoder1, encoder2):
     while abs(encoder1.steps) < target_steps:
-        print("using encoder 1 to move\n")
+        # print the value of ecoder steps
+        # print(f"encoder1.steps: {encoder1.steps}\n")
+        # print("using encoder 1 to move\n")
         control_motor_speed(direction, 1.0)
-    
+
     while abs(encoder2.steps) < target_steps:
-        print("using encoder 2 to move\n")
+        # print(f"encoder2.steps: {encoder2.steps}\n")
+        # print("using encoder 2 to move\n")
         control_motor_speed(direction, 1.0)
 
 
@@ -94,25 +80,27 @@ def move_robot(num_blocks, direction, acceleration=4):
 
     target_steps = int(steps_per_block * num_blocks)
 
-    print(f"Moving {num_blocks} block(s) {direction} without gradual acceleration {acceleration}")
-    print(f"Target steps: {target_steps}")
+    # print(f"Moving {num_blocks} block(s) {direction} without gradual acceleration {acceleration}")
+    # print(f"Target steps: {target_steps}")
 
     if direction == "N":
-        move_direction_static(direction, encoderE, encoderW)
+        move_direction_static(direction, target_steps, encoderE, encoderW)
     elif direction == "S":
-        move_direction_static(direction, encoderW, encoderE)
+        move_direction_static(direction, target_steps, encoderW, encoderE)
     elif direction == "E":
-        move_direction_static(direction, encoderN, encoderS)
+        move_direction_static(direction, target_steps, encoderN, encoderS)
     elif direction == "W":
-        move_direction_static(direction, encoderS, encoderN)
-    
-    print("Done moving")
+        move_direction_static(direction, target_steps, encoderS, encoderN)
+
+    #print("Done moving")
     encoderN.steps = 0
     encoderE.steps = 0
     encoderW.steps = 0
     encoderS.steps = 0
-
-    
+    motorN.stop()
+    motorE.stop()
+    motorS.stop()
+    motorW.stop()
 
 
 def only_dc(num_blocks, direction, acceleration):
@@ -132,3 +120,8 @@ def only_dc(num_blocks, direction, acceleration):
         motorW.forward()
         sleep(1)
         motorW.stop()
+
+    motorN.stop()
+    motorE.stop()
+    motorS.stop()
+    motorW.stop()

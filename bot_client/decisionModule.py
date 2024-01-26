@@ -11,7 +11,7 @@ from gameState import GameState, Directions, Location, GameModes
 import sys
 
 if "-elec" in sys.argv:
-    from elec_pac.motors.motor_control import only_dc
+    from elec_motor_control import move_robot
 
 DISTANCE_THRESHOLD = 5
 
@@ -197,7 +197,7 @@ class DecisionModule:
             move = location_to_direction(start, _move)
             return move
 
-        print("No path found 🥲")
+        print("No path found")
         return Directions.NONE
 
     def _algo(self, start: Location, target: Location) -> List[Location]:
@@ -274,7 +274,6 @@ class DecisionModule:
 
             self.state.lock()
             next_move = self._get_next_move()
-            self.state.queueAction(4, next_move)
 
             direction_map = {
                 Directions.UP: "N",
@@ -284,7 +283,9 @@ class DecisionModule:
                 Directions.NONE: "NONE",
             }
             direction_letter = direction_map[next_move]
-            if "-elec" in sys.argv:
-                only_dc(1, direction_letter, 4)
 
+            if "-elec" in sys.argv:
+                move_robot(1, direction_letter)
+
+            self.state.queueAction(4, next_move)
             self.state.unlock()
