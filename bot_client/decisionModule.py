@@ -197,7 +197,7 @@ class DecisionModule:
             move = location_to_direction(start, _move)
             return move
 
-        print("No path found 🥲")
+        print("No path found")
         return Directions.NONE
 
     def _algo(self, start: Location, target: Location) -> List[Location]:
