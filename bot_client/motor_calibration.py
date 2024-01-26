@@ -1,9 +1,5 @@
-import sys
-
-sys.path.append("..")
-
-from .motor_parameters import *
-from .motor_control import control_motor_speed
+from motor_parameters import *
+from motor_control import control_motor_speed
 
 # In this file we will be checking motor calibration
 # we will have two
