@@ -5,6 +5,22 @@ from motor_control import control_motor_speed
 # we will have two
 check_dc = False
 check_encoder = False
+
+#input from user to check what they want to test
+print("What would you like to test?")
+print("1. DC motors")
+print("2. Encoders")
+print("3. Both")
+print("4. Quit")
+user_input = input("Enter your choice: ")
+#use the user input to set the values of check_dc and check_encoder
+if user_input == "1":
+    check_dc = True
+elif user_input == "2":
+    check_encoder = True
+elif user_input == "3":
+    check_dc = True
+    check_encoder = True
 # 1. dc motor is connected properly
 if check_dc:
     print("0.5s movement in each direction")
@@ -21,7 +37,7 @@ if check_dc:
     motorE.stop()
 
     motorW.forward()
-    sleep(1)
+    sleep(0.5)
     motorW.stop()
     print("dc test is complete")
 
