@@ -1,5 +1,5 @@
-from motor_parameters import *
-from motor_control import control_motor_speed
+from .motor_parameters import *
+from .motor_control import control_motor_speed
 
 # In this file we will be checking motor calibration
 # we will have two
@@ -54,4 +54,3 @@ motorN.stop()
 motorE.stop()
 motorS.stop()
 motorW.stop()
-
