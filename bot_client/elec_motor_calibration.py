@@ -1,5 +1,5 @@
-from motor_parameters import *
-from motor_control import control_motor_speed
+from elec_motor_parameters import *
+from elec_motor_control import control_motor_speed
 
 # In this file we will be checking motor calibration
 # we will have two
