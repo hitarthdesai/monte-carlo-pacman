@@ -1,19 +1,23 @@
-from motor_parameters import *
-from motor_control import control_motor_speed
+import sys
+
+sys.path.append("..")
+
+from .motor_parameters import *
+from .motor_control import control_motor_speed
 
 # In this file we will be checking motor calibration
 # we will have two
 check_dc = False
 check_encoder = False
 
-#input from user to check what they want to test
+# input from user to check what they want to test
 print("What would you like to test?")
 print("1. DC motors")
 print("2. Encoders")
 print("3. Both")
 print("4. Quit")
 user_input = input("Enter your choice: ")
-#use the user input to set the values of check_dc and check_encoder
+# use the user input to set the values of check_dc and check_encoder
 if user_input == "1":
     check_dc = True
 elif user_input == "2":

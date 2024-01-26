@@ -1,4 +1,8 @@
-from motor_parameters import *
+import sys
+
+sys.path.append("..")
+
+from .motor_parameters import *
 
 
 def control_motor_speed(direction, speed):
