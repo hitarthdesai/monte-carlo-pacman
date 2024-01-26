@@ -1,2 +1,2 @@
 from .util import *
-from elec import *
+from .elec import *
