@@ -1,5 +1,5 @@
 from elec_motor_parameters import *
-from elec_motor_control import control_motor_speed
+from elec_motor_control import control_motor_speed, reset_encoders, stop_motors
 
 # In this file we will be checking motor calibration
 # we will have two
@@ -21,6 +21,7 @@ elif user_input == "2":
 elif user_input == "3":
     check_dc = True
     check_encoder = True
+
 # 1. dc motor is connected properly
 if check_dc:
     print("0.5s movement in each direction")
@@ -44,10 +45,7 @@ if check_dc:
 # 2. encoders are connected and working properly
 if check_encoder:
     print("encoder test is starting")
-    encoderN.steps = 0
-    encoderE.steps = 0
-    encoderW.steps = 0
-    encoderS.steps = 0
+    reset_encoders()
     print("Moving north 1 block using E encoder")
     while abs(encoderE.steps) < steps_per_block:
         # print(f"encoderE.steps: {encoderE.steps}")
@@ -65,8 +63,6 @@ if check_encoder:
         # print(f"encoderS.steps: {encoderS.steps}")
         control_motor_speed("W", 1.0)
     print("encoder test is complete")
+    reset_encoders()
 
-motorN.stop()
-motorE.stop()
-motorS.stop()
-motorW.stop()
+stop_motors()
