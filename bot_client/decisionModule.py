@@ -1,17 +1,15 @@
 import asyncio
 import heapq
 from typing import Optional, List
-import math
 from algo import Node
 from heuristic import Heuristic
 from util import location_to_direction
-from cluster import Cluster
 
 from gameState import GameState, Directions, Location, GameModes
 import sys
 
 if "-elec" in sys.argv:
-    from elec_motor_control import move_robot
+    from elec import move_robot
 
 DISTANCE_THRESHOLD = 5
 
@@ -52,7 +50,7 @@ class DecisionModule:
             print(f"Error in finding closest pellet: {e}")
             return self.state.pacmanLoc
 
-    def _is_pellet_safe(self, pellet: Location, clusters: List[Cluster]) -> bool:
+    def _is_pellet_safe(self, pellet: Location) -> bool:
         if type(pellet) is not Location:
             pelletLoc = Location(self.state)
             pelletLoc.update((pellet[0] << 8) | pellet[1])
@@ -65,48 +63,20 @@ class DecisionModule:
 
     def _find_closest_pellet(self) -> Optional[Location]:
         grid_width, grid_height = 31, 31
-        num_clusters = 4
-        cluster_starting_coords = self._calculate_cluster_starting_coords(
-            grid_width, grid_height, num_clusters
-        )
-        clusters = [
-            Cluster(coords[0], coords[1], 4) for coords in cluster_starting_coords
-        ]
-        self._initialize_clusters(clusters)
 
         pellets = self._get_pellets_coords(grid_width, grid_height)
 
-        pellets = [
-            pellet for pellet in pellets if self._is_pellet_safe(pellet, clusters)
-        ]
+        pellets = [pellet for pellet in pellets if self._is_pellet_safe(pellet)]
 
         try:
             return min(
                 pellets,
                 key=lambda point: self.state.pacmanLoc.distance_to_overload(point)
-                - self.heuristic.cluster_heuristic(clusters, point),
+                - self.heuristic._cluster_heuristic(point),
             )
         except Exception as e:
             print(f"Error in return: {e}")
             return self._get_away_from_ghosts_when_cant_find_pellets()
-
-    def _calculate_cluster_starting_coords(self, grid_width, grid_height, num_clusters):
-        x_center_multiples, y_center_multiples = int(
-            grid_width / (math.sqrt(num_clusters) + 1)
-        ), int(grid_height / (math.sqrt(num_clusters) + 1))
-        cluster_starting_coords = [
-            ((i + 1) * x_center_multiples, (j + 1) * y_center_multiples)
-            for i in range(int(math.sqrt(num_clusters)))
-            for j in range(int(math.sqrt(num_clusters)))
-        ]
-        return cluster_starting_coords
-
-    def _initialize_clusters(self, clusters):
-        for cluster in clusters:
-            cluster.location = Location(None)
-            value = (cluster.x << 8) | cluster.y
-            cluster.location.update(value)
-            self.state.updated_magnitude(cluster)
 
     def _get_pellets_coords(self, grid_width, grid_height):
         pellets = [
@@ -205,7 +175,7 @@ class DecisionModule:
         closed_set = set()
         head = Node(start, None)
         head.g = 0
-        head.h = self._get_heuristic(start, target)
+        head.h = self.heuristic.get_overall_heuristic(start, target)
         head.f = head.h
         heapq.heappush(open_list, head)
 
@@ -241,7 +211,7 @@ class DecisionModule:
                 loc.update((neighbor[0] << 8) | neighbor[1])
                 node = Node(loc, curr)
                 node.g = curr.g + 1
-                node.h = self._get_heuristic(loc, target)
+                node.h = self.heuristic.get_overall_heuristic(loc, target)
                 node.f = node.g + node.h
                 heapq.heappush(open_list, node)
 
@@ -254,14 +224,6 @@ class DecisionModule:
                 for sp in self.superPellets
                 if not (sp.row == move.row and sp.col == move.col)
             ]
-
-    def _get_heuristic(self, curr: Location, other: Location) -> int:
-        cluster_starting_coords = [[7, 8], [7, 23], [20, 8], [20, 23]]
-        clusters = [
-            Cluster(coords[0], coords[1], 4) for coords in cluster_starting_coords
-        ]
-        self._initialize_clusters(clusters)
-        return self.heuristic.get_overall_heuristic(curr, other, clusters)
 
     async def decisionLoop(self) -> None:
         while self.state.isConnected():
