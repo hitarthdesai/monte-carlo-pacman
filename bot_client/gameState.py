@@ -1,3 +1,5 @@
+from typing import Tuple
+
 # Enum class (for game mode)
 from enum import IntEnum
 
@@ -15,6 +17,7 @@ from terminalColors import *
 
 # Server messages
 from serverMessage import ServerMessage
+
 
 class GameModes(IntEnum):
     """
@@ -201,7 +204,7 @@ class Location:
             print(f"other: {other}")
             return 0
 
-    def distance_to_overload(self, other: int) -> float:
+    def distance_to_overload(self, other: Tuple[int, int]) -> float:
         """
         Determine the manhattan distance to a row and column
         """
@@ -210,7 +213,7 @@ class Location:
             # print(self.row, self.col, other.row, other.col)
             return abs(self.row - other[0]) + abs(self.col - other[1])
         except Exception as e:
-            print(f"Error in distance_to(): {e}")
+            print(f"Error in distance_to_overload(): {e}")
             print(f"self: {self}")
             print(f"other: {other}")
             return 0
@@ -921,6 +924,7 @@ class GameState:
 
         # Return that Pacman was safe during this transition
         return True
+
 
 def compressGameState(state: GameState) -> GameStateCompressed:
     """
