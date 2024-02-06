@@ -1,4 +1,5 @@
-from elec_motor_parameters import *
+from .motor_parameters import *
+
 
 def reset_encoders():
     encoderN.steps = 0
@@ -6,11 +7,13 @@ def reset_encoders():
     encoderW.steps = 0
     encoderS.steps = 0
 
+
 def stop_motors():
     motorN.stop()
     motorE.stop()
     motorW.stop()
     motorS.stop()
+
 
 def control_motor_speed(direction, speed):
     if direction == "N":
@@ -25,6 +28,7 @@ def control_motor_speed(direction, speed):
     if direction == "W":
         motorN.backward(speed)
         motorS.forward(speed)
+
 
 def move_direction_static(direction, target_steps, encoder1, encoder2):
     while abs(encoder1.steps) < target_steps:
@@ -55,11 +59,12 @@ def move_robot(num_blocks, direction, acceleration=4):
     elif direction == "W":
         move_direction_static(direction, target_steps, encoderS, encoderN)
 
-    #print("Done moving")
+    # print("Done moving")
     reset_encoders()
     stop_motors()
 
-#Use when encoders are broken
+
+# Use when encoders are broken
 def only_dc(num_blocks, direction, acceleration):
     if direction == "N":
         motorN.forward()
@@ -80,7 +85,8 @@ def only_dc(num_blocks, direction, acceleration):
 
     stop_motors()
 
-#TODO: maybe look at this but for now it is not needed
+
+# TODO: maybe look at this but for now it is not needed
 def gradual_speed_change(
     target_steps, direction, encoder, gradual_change=True, rate_of_increase=4
 ):

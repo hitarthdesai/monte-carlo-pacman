@@ -1,19 +1,28 @@
 import asyncio
 import heapq
-from typing import Optional, List
-import math
+from typing import List, Tuple
 from algo import Node
 from heuristic import Heuristic
-from util import location_to_direction
-from cluster import Cluster
+from util import location_to_direction, direction_to_elec_move, next_move_in_direction
 
 from gameState import GameState, Directions, Location, GameModes
 import sys
 
 if "-elec" in sys.argv:
-    from elec_motor_control import move_robot
+    from elec import move_robot
 
+GRID_WIDTH = 31
+GRID_HEIGHT = 31
 DISTANCE_THRESHOLD = 5
+
+ALL_DIRECTIONS = [
+    Directions.UP,
+    Directions.DOWN,
+    Directions.LEFT,
+    Directions.RIGHT,
+]
+
+SUPER_PELLET_POSITIONS: List[Tuple[int, int]] = [(3, 1), (3, 26), (23, 1), (23, 26)]
 
 
 class DecisionModule:
@@ -31,28 +40,15 @@ class DecisionModule:
         self.state = state
         self.heuristic = Heuristic(state)
 
-        self.superPellets: List[Location] = []  # Initialize as an empty list
-        self._initialize_super_pellets()
-
-    def _initialize_super_pellets(self):
-        # Initialize the locations of super pellets dynamically
-        super_pellet_positions = [(3, 1), (3, 26), (23, 1), (23, 26)]
-        self.superPellets = [Location(self.state) for _ in super_pellet_positions]
-
-        # Update each super pellet location
-        for location, (row, col) in zip(self.superPellets, super_pellet_positions):
-            location.update((row << 8) | col)
-
     # TODO: Consider chase vs scatter mode.
-    def _get_target(self) -> Optional[Location]:
+    def _get_target(self) -> Location:
         try:
-            # return self.state.find_closest_pellet(self.state.pacmanLoc)
-            return self._find_closest_pellet()
+            return self._find_closest_safe_pellet()
         except Exception as e:
             print(f"Error in finding closest pellet: {e}")
             return self.state.pacmanLoc
 
-    def _is_pellet_safe(self, pellet: Location, clusters: List[Cluster]) -> bool:
+    def _is_pellet_safe(self, pellet: Location) -> bool:
         if type(pellet) is not Location:
             pelletLoc = Location(self.state)
             pelletLoc.update((pellet[0] << 8) | pellet[1])
@@ -63,137 +59,70 @@ class DecisionModule:
             pellet.distance_to(g.location) > DISTANCE_THRESHOLD for g in normal_ghosts
         )
 
-    def _find_closest_pellet(self) -> Optional[Location]:
-        grid_width, grid_height = 31, 31
-        num_clusters = 4
-        cluster_starting_coords = self._calculate_cluster_starting_coords(
-            grid_width, grid_height, num_clusters
-        )
-        clusters = [
-            Cluster(coords[0], coords[1], 4) for coords in cluster_starting_coords
-        ]
-        self._initialize_clusters(clusters)
+    def _find_closest_safe_pellet(self) -> Location:
+        """
+        Find the closest pellet to the current location of Pacman
+        It skips any pellets that are within a CONSTANT distance of any normal ghost
 
-        pellets = self._get_pellets_coords(grid_width, grid_height)
+        If no pellets are found, it tries to run away from all ghosts
+        """
 
-        pellets = [
-            pellet for pellet in pellets if self._is_pellet_safe(pellet, clusters)
+        safe_pellets = [
+            (x, y)
+            for x in range(GRID_WIDTH)
+            for y in range(GRID_HEIGHT)
+            if self.state.pelletAt(x, y) and self._is_pellet_safe((x, y))
         ]
 
         try:
-            return min(
-                pellets,
+            x, y = min(
+                safe_pellets,
                 key=lambda point: self.state.pacmanLoc.distance_to_overload(point)
-                - self.heuristic.cluster_heuristic(clusters, point),
+                - self.heuristic._cluster_heuristic(point),
             )
+
+            closest_safe_pellet = Location(self.state)
+            closest_safe_pellet.update((x << 8) | y)
+            return closest_safe_pellet
+
         except Exception as e:
-            print(f"Error in return: {e}")
+            print(f"Error in _find_closest_safe_pellet: {e}")
             return self._get_away_from_ghosts_when_cant_find_pellets()
-
-    def _calculate_cluster_starting_coords(self, grid_width, grid_height, num_clusters):
-        x_center_multiples, y_center_multiples = int(
-            grid_width / (math.sqrt(num_clusters) + 1)
-        ), int(grid_height / (math.sqrt(num_clusters) + 1))
-        cluster_starting_coords = [
-            ((i + 1) * x_center_multiples, (j + 1) * y_center_multiples)
-            for i in range(int(math.sqrt(num_clusters)))
-            for j in range(int(math.sqrt(num_clusters)))
-        ]
-        return cluster_starting_coords
-
-    def _initialize_clusters(self, clusters):
-        for cluster in clusters:
-            cluster.location = Location(None)
-            value = (cluster.x << 8) | cluster.y
-            cluster.location.update(value)
-            self.state.updated_magnitude(cluster)
-
-    def _get_pellets_coords(self, grid_width, grid_height):
-        pellets = [
-            (x, y)
-            for x in range(grid_width)
-            for y in range(grid_height)
-            if self.state.pelletAt(x, y)
-        ]
-        return pellets
-
-    def _get_new_location(self, current_location, direction):
-        if direction == Directions.UP:
-            return (current_location.row, current_location.col + 1)
-        elif direction == Directions.DOWN:
-            return (current_location.row, current_location.col - 1)
-        elif direction == Directions.LEFT:
-            return (current_location.row - 1, current_location.col)
-        elif direction == Directions.RIGHT:
-            return (current_location.row + 1, current_location.col)
-
-    def _get_new_location_as_location(self, current_location, direction):
-        target = self._get_new_location(current_location, direction)
-        if type(target) is not Location:
-            targetLoc = Location(self.state)
-            targetLoc.update((target[0] << 8) | target[1])
-            target = targetLoc
-
-        return target
 
     def _get_away_from_ghosts_when_cant_find_pellets(self):
         print("No pellets found, running away from ghosts")
-        ghost_plans = [g.guessPlan() for g in self.state.ghosts]
-        normal_ghosts = [g for g in self.state.ghosts if not g.isFrightened()]
-
-        possible_moves = [
-            Directions.UP,
-            Directions.DOWN,
-            Directions.LEFT,
-            Directions.RIGHT,
+        ghost_plans = [
+            next_move_in_direction(g.location, g.guessPlan()) for g in self.state.ghosts
         ]
 
-        possible_moves = [
-            move
-            for move in possible_moves
-            if not self.state.wallAt(
-                *self._get_new_location(self.state.pacmanLoc, move)
-            )
-        ]
-
-        # Remove any moves that would lead to a location that a ghost is planning to move to
-        possible_moves = [
-            move
-            for move in possible_moves
-            if self._get_new_location(self.state.pacmanLoc, move) not in ghost_plans
-        ]
-
-        # If there are no possible moves, stay in the current location
-        if not possible_moves:
-            return self.state.pacmanLoc
-
-        best_move = max(
-            possible_moves,
-            key=lambda move: min(
-                self._get_new_location_as_location(
-                    self.state.pacmanLoc, move
-                ).distance_to(g.location)
-                for g in normal_ghosts
-            ),
+        all_possible_moves = map(
+            lambda d: next_move_in_direction(self.state.pacmanLoc, d), ALL_DIRECTIONS
+        )
+        # Remove any moves that hit a wall or a ghost is planning to move to
+        valid_moves = filter(
+            lambda loc: not self.state.wallAt(loc.row, loc.col)
+            and loc not in ghost_plans,
+            all_possible_moves,
         )
 
-        # Return the new location
-        return self._get_new_location(self.state.pacmanLoc, best_move)
+        # If there are no possible moves, stay in the current location
+        if not valid_moves:
+            return self.state.pacmanLoc
+
+        normal_ghosts = [g for g in self.state.ghosts if not g.isFrightened()]
+        best_move = max(
+            valid_moves,
+            key=lambda move: min(move.distance_to(g.location) for g in normal_ghosts),
+        )
+
+        return best_move
 
     def _get_next_move(self) -> Directions:
         target = self._get_target()
-        if type(target) is not Location:
-            targetLoc = Location(self.state)
-            targetLoc.update((target[0] << 8) | target[1])
-            target = targetLoc
-        else:
-            targetLoc = target
-
         start = self.state.pacmanLoc
-        path = self._algo(start, targetLoc)
+        path = self._algo(start, target)
         if path is not None and len(path) > 0:
             _move = path[0]
-            self._handle_super_pellet(_move)
             move = location_to_direction(start, _move)
             return move
 
@@ -205,7 +134,7 @@ class DecisionModule:
         closed_set = set()
         head = Node(start, None)
         head.g = 0
-        head.h = self._get_heuristic(start, target)
+        head.h = self.heuristic.get_overall_heuristic(start, target)
         head.f = head.h
         heapq.heappush(open_list, head)
 
@@ -241,27 +170,11 @@ class DecisionModule:
                 loc.update((neighbor[0] << 8) | neighbor[1])
                 node = Node(loc, curr)
                 node.g = curr.g + 1
-                node.h = self._get_heuristic(loc, target)
+                node.h = self.heuristic.get_overall_heuristic(loc, target)
                 node.f = node.g + node.h
                 heapq.heappush(open_list, node)
 
         return None
-
-    def _handle_super_pellet(self, move: Location):
-        if self.state.superPelletAt(move.row, move.col):
-            self.superPellets = [
-                sp
-                for sp in self.superPellets
-                if not (sp.row == move.row and sp.col == move.col)
-            ]
-
-    def _get_heuristic(self, curr: Location, other: Location) -> int:
-        cluster_starting_coords = [[7, 8], [7, 23], [20, 8], [20, 23]]
-        clusters = [
-            Cluster(coords[0], coords[1], 4) for coords in cluster_starting_coords
-        ]
-        self._initialize_clusters(clusters)
-        return self.heuristic.get_overall_heuristic(curr, other, clusters)
 
     async def decisionLoop(self) -> None:
         while self.state.isConnected():
@@ -274,18 +187,10 @@ class DecisionModule:
 
             self.state.lock()
             next_move = self._get_next_move()
-
-            direction_map = {
-                Directions.UP: "N",
-                Directions.LEFT: "W",
-                Directions.DOWN: "S",
-                Directions.RIGHT: "E",
-                Directions.NONE: "NONE",
-            }
-            direction_letter = direction_map[next_move]
+            elec_move = direction_to_elec_move(next_move)
 
             if "-elec" in sys.argv:
-                move_robot(1, direction_letter)
+                move_robot(1, elec_move)
 
             self.state.queueAction(4, next_move)
             self.state.unlock()
