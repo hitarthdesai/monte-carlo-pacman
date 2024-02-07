@@ -1,5 +1,5 @@
 from .motor_parameters import *
-from .motor_control import control_motor_speed
+from .motor_control import control_motor_speed, reset_encoders, stop_motors
 
 # In this file we will be checking motor calibration
 # we will have two
