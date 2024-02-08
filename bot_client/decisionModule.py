@@ -9,7 +9,7 @@ from gameState import GameState, Directions, Location, GameModes
 import sys
 
 if "-elec" in sys.argv:
-    from elec import move_robot
+    from motor_control import move_robot
 
 GRID_WIDTH = 31
 GRID_HEIGHT = 31
@@ -48,7 +48,9 @@ class DecisionModule:
             print(f"Error in finding closest pellet: {e}")
             return self.state.pacmanLoc
 
-    def _is_pellet_safe(self, pellet: Location) -> bool:
+    def _is_pellet_safe(
+        self, pellet: Location, distance_threshold=DISTANCE_THRESHOLD
+    ) -> bool:
         if type(pellet) is not Location:
             pelletLoc = Location(self.state)
             pelletLoc.update((pellet[0] << 8) | pellet[1])
@@ -56,7 +58,7 @@ class DecisionModule:
 
         normal_ghosts = [g for g in self.state.ghosts if not g.isFrightened()]
         return all(
-            pellet.distance_to(g.location) > DISTANCE_THRESHOLD for g in normal_ghosts
+            pellet.distance_to(g.location) > distance_threshold for g in normal_ghosts
         )
 
     def _find_closest_safe_pellet(self) -> Location:
