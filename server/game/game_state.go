@@ -5,11 +5,7 @@ import (
 	"math/rand"
 	"sync"
 	"time"
-	"os"
-	"fmt"
-	"path/filepath"
 )
-
 
 /*
 	NOTE: at 24 ticks/sec, currTicks will experience an integer overflow after
@@ -335,60 +331,6 @@ func (gs *gameState) setLives(lives uint8) {
 	gs.muLives.Unlock()
 }
 
-func (gs *gameState) writeScore(iteration int) {
-    // Declare filePath outside of the if-else blocks
-    var filePath string
-
-	dir, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if iteration == 1 {
-		// Set filePath for iteration 1
-		filePath = filepath.Join(dir, "output1.txt")
-	} else if iteration == 2 {
-		// Set filePath for iteration 2
-		filePath = filepath.Join(dir, "output2.txt")
-	} else {
-		// Set filePath for other iterations
-		filePath = filepath.Join(dir, "output3.txt")
-	}
-
-    // if iteration == 1 {
-    //     // Set filePath for iteration 1
-    //     filePath = "C:/dev/6ix-pac/output1.txt"
-    // } else if iteration == 2 {
-    //     // Set filePath for iteration 2
-    //     filePath = "C:/dev/6ix-pac/output2.txt"
-    // } else {
-    //     // Set filePath for other iterations
-    //     filePath = "C:/dev/6ix-pac/output3.txt"
-    // }
-
-    // Open or create a file for writing
-    file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-    if err != nil {
-        // Handle the error
-        log.Printf("Error opening file: %v\n", err)
-        return
-    }
-    defer file.Close()
-
-    // Get the uint16 score from the gameState
-    score := gs.getScore()
-
-    // Write the uint16 score to the file
-    _, err = fmt.Fprintf(file, "%d,", score)
-    if err != nil {
-        // Handle the error
-        log.Printf("Error writing score: %v\n", err)
-    }
-
-    return
-}
-
-
 // Helper function to decrement the lives left
 func (gs *gameState) decrementLives() {
 
@@ -396,19 +338,7 @@ func (gs *gameState) decrementLives() {
 	lives := gs.getLives()
 
 	// If there were no lives, no need to decrement any more
-	if lives== 3{
-		gs.writeScore(1)
-	}
-	if lives== 2{
-		gs.writeScore(2)
-	}
-	if lives == 1 {
-		gs.writeScore(3)
-		os.Exit(0)
-	}
-
 	if lives == 0 {
-		
 		return
 	}
 
