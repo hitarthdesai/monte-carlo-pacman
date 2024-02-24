@@ -1,15 +1,9 @@
 import asyncio
-from typing import List, Tuple
+from typing import List
 from heuristic import Heuristic
-from util import location_to_direction, get_valid_pacman_actions
+from monteCarlo import MonteCarlo
 
 from gameState import GameState, Directions, Location, GameModes
-
-
-DISTANCE_THRESHOLD = 5
-
-
-SUPER_PELLET_POSITIONS: List[Tuple[int, int]] = [(3, 1), (3, 26), (23, 1), (23, 26)]
 
 
 class DecisionModule:
@@ -25,16 +19,25 @@ class DecisionModule:
 
         # Game state object to store the game information
         self.state = state
+        self.mcts = MonteCarlo()
         self.heuristic = Heuristic(state)
 
     def _algo(self, start: Location) -> List[Location]:
         return start
 
     def _get_next_move(self) -> Directions:
-        valid_moves = get_valid_pacman_actions(self.state)
         start = self.state.pacmanLoc
         move = self._algo(start)
-        return location_to_direction(start, move)
+
+        root = self.mcts.init_tree(self.state)
+        for i in range(100):
+            print(f"iteration {i+1}")
+            node = self.mcts.select_action(root)
+            expanded_node = self.mcts.expansion(node)
+            reward = self.mcts.simulate_action(expanded_node)
+            self.mcts.backpropagation(expanded_node, reward)
+
+        return self.mcts.get_best_action()
 
     async def decisionLoop(self) -> None:
         while self.state.isConnected():
