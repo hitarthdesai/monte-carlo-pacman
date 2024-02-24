@@ -1,21 +1,13 @@
 import asyncio
 from typing import List, Tuple
 from heuristic import Heuristic
-from util import location_to_direction
+from util import location_to_direction, get_valid_pacman_moves
 
 from gameState import GameState, Directions, Location, GameModes
 
 
-GRID_WIDTH = 31
-GRID_HEIGHT = 31
 DISTANCE_THRESHOLD = 5
 
-ALL_DIRECTIONS = [
-    Directions.UP,
-    Directions.DOWN,
-    Directions.LEFT,
-    Directions.RIGHT,
-]
 
 SUPER_PELLET_POSITIONS: List[Tuple[int, int]] = [(3, 1), (3, 26), (23, 1), (23, 26)]
 
@@ -39,6 +31,7 @@ class DecisionModule:
         return start
 
     def _get_next_move(self) -> Directions:
+        valid_moves = get_valid_pacman_moves(self.state)
         start = self.state.pacmanLoc
         move = self._algo(start)
         return location_to_direction(start, move)
