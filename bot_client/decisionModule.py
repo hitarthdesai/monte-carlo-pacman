@@ -1,7 +1,7 @@
 import asyncio
 from typing import List, Tuple
 from heuristic import Heuristic
-from util import location_to_direction, get_valid_pacman_moves
+from util import location_to_direction, get_valid_pacman_actions
 
 from gameState import GameState, Directions, Location, GameModes
 
@@ -31,7 +31,7 @@ class DecisionModule:
         return start
 
     def _get_next_move(self) -> Directions:
-        valid_moves = get_valid_pacman_moves(self.state)
+        valid_moves = get_valid_pacman_actions(self.state)
         start = self.state.pacmanLoc
         move = self._algo(start)
         return location_to_direction(start, move)
