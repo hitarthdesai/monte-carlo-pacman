@@ -23,7 +23,7 @@ def is_location_within_grid(loc: Location):
     return row >= 0 and row < GRID_WIDTH and col >= 0 and col < GRID_HEIGHT
 
 
-def get_valid_pacman_moves(gs: GameState) -> List[Directions]:
+def get_valid_pacman_actions(gs: GameState) -> List[Directions]:
     """
     Get the valid moves for the pacman
     """
