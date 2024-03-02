@@ -3,8 +3,7 @@ from typing import List
 from monteCarlo import MonteCarlo
 
 from gameState import GameState, Directions, GameModes
-
-NUM_MCTS_ITERATIONS = 10
+from constants import NUM_MCTS_ITERATIONS
 
 
 class DecisionModule:

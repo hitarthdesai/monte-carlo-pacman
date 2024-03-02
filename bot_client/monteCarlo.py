@@ -4,9 +4,7 @@ from typing import List
 from gameState import GameState, Directions
 from util import get_valid_pacman_actions
 from heuristic import Heuristic
-
-EPSILON = 1e-6
-SIMULATION_DEPTH = 5
+from constants import SIMULATION_DEPTH, EPSILON
 
 
 class MonteCarloTreeNode:
