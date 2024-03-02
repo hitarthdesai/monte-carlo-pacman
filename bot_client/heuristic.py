@@ -9,22 +9,19 @@ CLUSTER_STARTING_COORDINATES = [[7, 8], [7, 23], [20, 8], [20, 23]]
 
 
 class Heuristic:
-    def __init__(self, state: GameState):
-        self.state = state
+    def __init__(self):
         self.heuristics = [
-            self._manhattan_distance,
             self._avoid_too_close_to_normal_ghosts,
             self._prefer_close_to_scared_ghosts,
             self._cluster_heuristic,
         ]
+
+        self.weights = [-1000, 1000, 1]
         self.num_heuristics = len(self.heuristics)
 
         self._clusters = [
             Cluster(coords[0], coords[1], 4) for coords in CLUSTER_STARTING_COORDINATES
         ]
-
-    def _manhattan_distance(self):
-        return self.curr.distance_to(self.target)
 
     def _avoid_too_close_to_normal_ghosts(self):
         """
@@ -56,31 +53,21 @@ class Heuristic:
 
         return sum(bonuses)
 
-    def _cluster_heuristic(self, curr):
+    def _cluster_heuristic(self):
         # Bring all clusters up to date wrt current pacman location
         for cluster in self._clusters:
             cluster.update_magnitude(self.state)
 
-        # idea: select what cluster region the pellet belongs to, then return the magnitude of that cluster.
-        # This is used as a 'discount' of the distance, to incentivise staying in cluster region
-        try:
-            x_s, y_s = self._clusters[0].x_swings, self._clusters[0].y_swings
-        except Exception as e:
-            print(f"Error in swings: {e}")
-            print(curr)
-            return 0
-
-        n_x, n_y = curr[0], curr[1]
+        x_swings, y_swings = self._clusters[0].x_swings, self._clusters[0].y_swings
 
         cluster_num = -1
-
         for i in range(len(self._clusters)):
             # idea: start in cluster region 1. If both elements of diffs negative, pellet in cluster region. If not check another region, until found
             c_x, c_y = (
-                self._clusters[i].location.row + x_s,
-                self._clusters[i].location.col + y_s,
+                self._clusters[i].location.row + x_swings,
+                self._clusters[i].location.col + y_swings,
             )
-            diffs = n_x - c_x, n_y - c_y
+            diffs = self.curr.row - c_x, self.curr.col - c_y
             if diffs[0] < 0 and diffs[1] < 0:
                 cluster_num = i
                 break
@@ -90,29 +77,15 @@ class Heuristic:
             return 0
         return self._clusters[cluster_num].magnitude
 
-    def get_overall_heuristic(self, curr: Location, target: Location):
-        self.curr = curr
-        self.target = target
+    def get_overall_heuristic(self, state: GameState):
+        self.state = state
+        self.curr = state.pacmanLoc
 
-        best_heuristic_score = float("-inf")  # Initialize with negative infinity
+        heuristic_score = 0
+        for i in range(self.num_heuristics):
+            score = self.weights[i] * self.heuristics[i]()
+            if score < 0:
+                print(score)
+            heuristic_score += score
 
-        for h in self.heuristics:
-            heuristic_score = 0
-
-            if h == self._cluster_heuristic:
-                curr_int = [curr.row, curr.col]
-                heuristic_score = h(curr_int)
-
-            elif h in [
-                self._avoid_too_close_to_normal_ghosts,
-                self._prefer_close_to_scared_ghosts,
-            ]:
-                heuristic_score = h() * 1000  # Experiment with weights
-
-            else:
-                heuristic_score = h()
-
-            heuristic_score /= self.num_heuristics
-            best_heuristic_score = max(best_heuristic_score, heuristic_score)
-
-        return best_heuristic_score
+        return heuristic_score
