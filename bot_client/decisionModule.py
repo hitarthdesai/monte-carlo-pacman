@@ -20,21 +20,13 @@ class DecisionModule:
         # Game state object to store the game information
         self.state = state
         self.mcts = MonteCarlo()
-        self.heuristic = Heuristic(state)
-
-    def _algo(self, start: Location) -> List[Location]:
-        return start
 
     def _get_next_move(self) -> Directions:
-        start = self.state.pacmanLoc
-        move = self._algo(start)
-
         root = self.mcts.init_tree(self.state)
         for i in range(100):
-            print(f"iteration {i+1}")
             node = self.mcts.select_action(root)
             expanded_node = self.mcts.expansion(node)
-            reward = self.mcts.simulate_action(expanded_node)
+            reward = self.mcts.simulate_playout(expanded_node)
             self.mcts.backpropagation(expanded_node, reward)
 
         return self.mcts.get_best_action()

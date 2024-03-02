@@ -1,7 +1,11 @@
 import random
+import math
 from typing import List
 from gameState import GameState, Directions
 from util import get_valid_pacman_actions
+from heuristic import Heuristic
+
+SIMULATION_DEPTH = 5
 
 
 class MonteCarloTreeNode:
@@ -23,7 +27,7 @@ class MonteCarloTreeNode:
 
 class MonteCarlo:
     def __init__(self) -> None:
-        pass
+        self.heuristics = Heuristic()
 
     def init_tree(self, gs: GameState) -> None:
         self.root = MonteCarloTreeNode(gs, None, None)
@@ -69,14 +73,42 @@ class MonteCarlo:
 
         return self.select_action(node)
 
-    def simulate_action(self, node: MonteCarloTreeNode) -> int:
+    def simulate_playout(self, node: MonteCarloTreeNode) -> int:
         """
         This is the third step of MCTS. Plays the game till termination or a specific depth is reached.
 
         For now, it simply returns a random reward. We can do better than this though.
         """
+        state = GameState()
+        state.update(node.state.serialize())
 
-        return random.randint(0, 100)
+        for i in range(SIMULATION_DEPTH):
+            actions = get_valid_pacman_actions(state)
+
+            scores = []
+            for action in actions:
+                new_state = GameState()
+                new_state.update(state.serialize())
+                new_state.simulateAction(new_state.updatePeriod, action)
+
+                # Decrease in number of lives means we reached a bad terminal state
+                if new_state.currLives < state.currLives:
+                    scores.append(-math.inf)
+
+                # Increase in the level means we reached a good terminal state
+                elif new_state.currLevel > state.currLevel:
+                    scores.append(math.inf)
+
+                # Otherwise, we use the heuristic to evaluate a non-terminal state
+                else:
+                    score = self.heuristics.get_overall_heuristic(new_state)
+                    scores.append(score)
+
+            max_score_index = scores.index(max(scores))
+            action = actions[max_score_index]
+            state.simulateAction(state.updatePeriod, action)
+
+        return state.currScore
 
     def backpropagation(self, node: MonteCarloTreeNode, reward: int) -> None:
         """
