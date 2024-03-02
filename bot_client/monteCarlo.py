@@ -5,15 +5,16 @@ from gameState import GameState, Directions
 from util import get_valid_pacman_actions
 from heuristic import Heuristic
 
+EPSILON = 1e-6
 SIMULATION_DEPTH = 5
 
 
 class MonteCarloTreeNode:
     def __init__(
-        self, current: GameState, action: Directions, parent: "MonteCarloTreeNode"
+        self, state: GameState, action: Directions, parent: "MonteCarloTreeNode"
     ):
         # Store the parent state and the action taken from that parent state
-        self.state = current
+        self.state = state
         self.action = action
         self.parent = parent
 
@@ -23,6 +24,30 @@ class MonteCarloTreeNode:
         # Stores information for back-propagation
         self.visits = 0
         self.total_reward = 0
+
+    def duplicate_and_perform_action(self, action: Directions) -> "MonteCarloTreeNode":
+        """
+        Duplicate the current state and perform the given action on the duplicate.
+        """
+
+        state = GameState()
+        state.update(self.state.serialize())
+        state.simulateAction(state.updatePeriod, action)
+
+        return MonteCarloTreeNode(state, action, self)
+
+    def calculate_ucb(self) -> float:
+        """
+        Calculate the Upper Confidence Bound for a node.
+        """
+
+        if self.visits == 0:
+            return float("inf")
+
+        return (
+            self.total_reward / self.visits
+            + 2 * (2 * ((self.parent.visits + EPSILON) / self.visits)) ** 0.5
+        )
 
 
 class MonteCarlo:
@@ -38,6 +63,25 @@ class MonteCarlo:
         This is the first step of MCTS. It selects a valid action for the pacman
 
         For now, it performs a random valid action, and returns the corresponding node.
+        """
+
+        if len(node.children) == 0:
+            actions = get_valid_pacman_actions(node.state)
+            children = map(
+                lambda action: node.duplicate_and_perform_action(action), actions
+            )
+            node.children = list(children)
+
+        best_node = max(node.children, key=lambda child: child.calculate_ucb())
+
+        return best_node
+
+    def expansion(self, node: MonteCarloTreeNode) -> MonteCarloTreeNode:
+        """
+        This is the second step of MCTS. We check if the resulting state, after applying
+        the selected action to the current state, corresponds to an unexplored node in our tree.
+
+        If it does, we create a new node for that state and add it as a child to the selected node.
         """
 
         actions = get_valid_pacman_actions(node.state)
@@ -63,16 +107,6 @@ class MonteCarlo:
             node.children.append(new_node)
             return new_node
 
-    def expansion(self, node: MonteCarloTreeNode) -> MonteCarloTreeNode:
-        """
-        This is the second step of MCTS. We check if the resulting state, after applying
-        the selected action to the current state, corresponds to an unexplored node in our tree.
-
-        If it does, we create a new node for that state and add it as a child to the selected node.
-        """
-
-        return self.select_action(node)
-
     def simulate_playout(self, node: MonteCarloTreeNode) -> int:
         """
         This is the third step of MCTS. Plays the game till termination or a specific depth is reached.
@@ -82,7 +116,7 @@ class MonteCarlo:
         state = GameState()
         state.update(node.state.serialize())
 
-        for i in range(SIMULATION_DEPTH):
+        for _ in range(SIMULATION_DEPTH):
             actions = get_valid_pacman_actions(state)
 
             scores = []

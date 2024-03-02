@@ -1,9 +1,10 @@
 import asyncio
 from typing import List
-from heuristic import Heuristic
 from monteCarlo import MonteCarlo
 
-from gameState import GameState, Directions, Location, GameModes
+from gameState import GameState, Directions, GameModes
+
+NUM_MCTS_ITERATIONS = 10
 
 
 class DecisionModule:
@@ -23,9 +24,10 @@ class DecisionModule:
 
     def _get_next_move(self) -> Directions:
         root = self.mcts.init_tree(self.state)
-        for i in range(100):
+        for _ in range(NUM_MCTS_ITERATIONS):
             node = self.mcts.select_action(root)
-            expanded_node = self.mcts.expansion(node)
+            # expanded_node = self.mcts.expansion(node)
+            expanded_node = node
             reward = self.mcts.simulate_playout(expanded_node)
             self.mcts.backpropagation(expanded_node, reward)
 
