@@ -83,9 +83,6 @@ class Heuristic:
 
         heuristic_score = 0
         for i in range(self.num_heuristics):
-            score = self.weights[i] * self.heuristics[i]()
-            if score < 0:
-                print(score)
-            heuristic_score += score
+            heuristic_score += self.weights[i] * self.heuristics[i]()
 
         return heuristic_score
