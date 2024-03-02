@@ -1,7 +1,5 @@
 from gameState import Location, GameState
-
-GRID_WIDTH = 27
-GRID_HEIGHT = 31
+from constants import GRID_WIDTH, GRID_HEIGHT
 
 
 class Cluster:

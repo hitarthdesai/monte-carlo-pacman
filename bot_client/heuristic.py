@@ -1,11 +1,6 @@
-from gameState import GameState, Location
+from gameState import GameState
 from cluster import Cluster
-
-DISTANCE_THRESHOLD = 5
-
-# This probably belongs in a constants file
-NUM_CLUSTERS = 4
-CLUSTER_STARTING_COORDINATES = [[7, 8], [7, 23], [20, 8], [20, 23]]
+from constants import CLUSTER_STARTING_COORDINATES, DISTANCE_THRESHOLD, NUM_CLUSTERS
 
 
 class Heuristic:
@@ -20,7 +15,8 @@ class Heuristic:
         self.num_heuristics = len(self.heuristics)
 
         self._clusters = [
-            Cluster(coords[0], coords[1], 4) for coords in CLUSTER_STARTING_COORDINATES
+            Cluster(coords[0], coords[1], NUM_CLUSTERS)
+            for coords in CLUSTER_STARTING_COORDINATES
         ]
 
     def _avoid_too_close_to_normal_ghosts(self):
