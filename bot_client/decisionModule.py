@@ -25,8 +25,7 @@ class DecisionModule:
         root = self.mcts.init_tree(self.state)
         for _ in range(NUM_MCTS_ITERATIONS):
             node = self.mcts.select_action(root)
-            # expanded_node = self.mcts.expansion(node)
-            expanded_node = node
+            expanded_node = self.mcts.expansion(node)
             reward = self.mcts.simulate_playout(expanded_node)
             self.mcts.backpropagation(expanded_node, reward)
 
@@ -38,7 +37,7 @@ class DecisionModule:
                 len(self.state.writeServerBuf) > 0
                 or self.state.gameMode == GameModes.PAUSED.value
             ):
-                await asyncio.sleep(0.01)  # change if pacman isn't moving as expected
+                await asyncio.sleep(0.2)  # change if pacman isn't moving as expected
                 continue
 
             self.state.lock()

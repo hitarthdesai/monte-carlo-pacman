@@ -8,10 +8,9 @@ class Heuristic:
         self.heuristics = [
             self._avoid_too_close_to_normal_ghosts,
             self._prefer_close_to_scared_ghosts,
-            self._cluster_heuristic,
         ]
 
-        self.weights = [-1000, 1000, 1]
+        self.weights = [-1000, 1000]
         self.num_heuristics = len(self.heuristics)
 
         self._clusters = [
@@ -26,8 +25,7 @@ class Heuristic:
 
         normal_ghosts = filter(lambda g: not g.isFrightened(), self.state.ghosts)
         penalties = map(
-            lambda g: DISTANCE_THRESHOLD
-            - min(DISTANCE_THRESHOLD, self.curr.distance_to(g.location)),
+            lambda g: max(0, DISTANCE_THRESHOLD - self.curr.distance_to(g.location)),
             normal_ghosts,
         )
 
@@ -42,8 +40,7 @@ class Heuristic:
             lambda g: g.isFrightened() and not g.spawning, self.state.ghosts
         )
         bonuses = map(
-            lambda g: min(DISTANCE_THRESHOLD, self.curr.distance_to(g.location))
-            - DISTANCE_THRESHOLD,
+            lambda g: max(0, DISTANCE_THRESHOLD - self.curr.distance_to(g.location)),
             scared_ghosts,
         )
 
