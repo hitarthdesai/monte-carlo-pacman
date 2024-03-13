@@ -40,12 +40,14 @@ class MonteCarloTreeNode:
         """
 
         if self.visits == 0:
-            return float("inf")
+            return math.inf
 
-        return (
-            self.total_reward / self.visits
-            + 2 * (2 * ((self.parent.visits + EPSILON) / self.visits)) ** 0.5
+        exploitation = self.total_reward / self.visits
+        exploration = 0.1 * math.sqrt(
+            math.log(self.parent.visits + EPSILON) / self.visits
         )
+
+        return exploitation + exploration
 
 
 class MonteCarlo:
@@ -113,6 +115,7 @@ class MonteCarlo:
         """
         state = GameState()
         state.update(node.state.serialize())
+        final_score = 0
 
         for _ in range(SIMULATION_DEPTH):
             actions = get_valid_pacman_actions(state)
@@ -121,10 +124,10 @@ class MonteCarlo:
             for action in actions:
                 new_state = GameState()
                 new_state.update(state.serialize())
-                new_state.simulateAction(new_state.updatePeriod, action)
+                is_safe = new_state.simulateAction(new_state.updatePeriod, action)
 
                 # Decrease in number of lives means we reached a bad terminal state
-                if new_state.currLives < state.currLives:
+                if not is_safe:
                     scores.append(-math.inf)
 
                 # Increase in the level means we reached a good terminal state
@@ -134,13 +137,15 @@ class MonteCarlo:
                 # Otherwise, we use the heuristic to evaluate a non-terminal state
                 else:
                     score = self.heuristics.get_overall_heuristic(new_state)
+                    score += new_state.currScore - state.currScore
                     scores.append(score)
 
             max_score_index = scores.index(max(scores))
+            final_score += scores[max_score_index]
             action = actions[max_score_index]
             state.simulateAction(state.updatePeriod, action)
 
-        return state.currScore
+        return final_score
 
     def backpropagation(self, node: MonteCarloTreeNode, reward: int) -> None:
         """

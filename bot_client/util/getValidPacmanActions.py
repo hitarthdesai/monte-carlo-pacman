@@ -10,7 +10,7 @@ ALL_DIRECTIONS = [
     Directions.DOWN,
     Directions.LEFT,
     Directions.RIGHT,
-    Directions.NONE,
+    # Directions.NONE,
 ]
 
 
