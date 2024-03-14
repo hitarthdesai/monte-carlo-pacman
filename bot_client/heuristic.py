@@ -1,6 +1,11 @@
 from gameState import GameState
 from cluster import Cluster
-from constants import CLUSTER_STARTING_COORDINATES, DISTANCE_THRESHOLD, NUM_CLUSTERS
+from constants import (
+    CLUSTER_STARTING_COORDINATES,
+    NUM_CLUSTERS,
+    NORMAL_GHOST_DISTANCE_THRESHOLD,
+    SCARED_GHOST_DISTANCE_THRESHOLD,
+)
 
 
 class Heuristic:
@@ -8,9 +13,11 @@ class Heuristic:
         self.heuristics = [
             self._avoid_too_close_to_normal_ghosts,
             self._prefer_close_to_scared_ghosts,
+            self._try_to_stay_away_from_normal_ghosts,
+            self._try_to_chase_scared_ghosts,
         ]
 
-        self.weights = [-1000, 1000]
+        self.weights = [-1000, 1000, 1, 1000]
         self.num_heuristics = len(self.heuristics)
 
         self._clusters = [
@@ -21,11 +28,15 @@ class Heuristic:
     def _avoid_too_close_to_normal_ghosts(self):
         """
         Avoid being too close to normal ghosts
+
+        Add negative amount to heuristic score to avoid this behavior
         """
 
         normal_ghosts = filter(lambda g: not g.isFrightened(), self.state.ghosts)
         penalties = map(
-            lambda g: max(0, DISTANCE_THRESHOLD - self.curr.distance_to(g.location)),
+            lambda g: max(
+                0, NORMAL_GHOST_DISTANCE_THRESHOLD - self.curr.distance_to(g.location)
+            ),
             normal_ghosts,
         )
 
@@ -34,13 +45,45 @@ class Heuristic:
     def _prefer_close_to_scared_ghosts(self):
         """
         Prefers being close to scared ghosts
+
+        Add positive amount to heuristic score to encourage this behavior
         """
 
         scared_ghosts = filter(
             lambda g: g.isFrightened() and not g.spawning, self.state.ghosts
         )
         bonuses = map(
-            lambda g: max(0, DISTANCE_THRESHOLD - self.curr.distance_to(g.location)),
+            lambda g: max(
+                0, SCARED_GHOST_DISTANCE_THRESHOLD - self.curr.distance_to(g.location)
+            ),
+            scared_ghosts,
+        )
+
+        return sum(bonuses)
+
+    def _try_to_stay_away_from_normal_ghosts(self):
+        """
+        Tries to stay away from normal ghosts
+
+        Farther the ghosts, better the situation
+        """
+
+        normal_ghosts = filter(lambda g: not g.isFrightened(), self.state.ghosts)
+        penalties = map(
+            lambda g: self.curr.distance_to(g.location),
+            normal_ghosts,
+        )
+
+        return sum(penalties)
+
+    def _try_to_chase_scared_ghosts(self):
+        """
+        Tries to chase scared ghosts
+        """
+
+        scared_ghosts = filter(lambda g: g.isFrightened(), self.state.ghosts)
+        bonuses = map(
+            lambda g: (1 / (1 + self.curr.distance_to(g.location))),
             scared_ghosts,
         )
 
