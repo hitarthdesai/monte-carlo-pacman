@@ -34,5 +34,6 @@ def get_valid_pacman_actions(gs: GameState) -> List[Directions]:
         next_moves,
     )
     dirs = map(lambda loc: location_to_direction(gs.pacmanLoc, loc), valid_moves)
-
+    if len(list(dirs)) == 0:
+        print("No valid moves for pacman!")
     return list(dirs)

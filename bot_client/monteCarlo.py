@@ -64,17 +64,32 @@ class MonteCarlo:
 
         For now, it performs a random valid action, and returns the corresponding node.
         """
-
+        print(node)
         if len(node.children) == 0:
             actions = get_valid_pacman_actions(node.state)
             children = map(
                 lambda action: node.duplicate_and_perform_action(action), actions
             )
             node.children = list(children)
+        
+        ucb_values = [child.calculate_ucb() for child in node.children]
+        
+        max_ucb_value = max(ucb_values, default=0)
 
-        best_node = max(node.children, key=lambda child: child.calculate_ucb())
+         # Get all nodes with the maximum UCB value
+        best_nodes = [child for child, ucb in zip(node.children, ucb_values) if ucb == max_ucb_value]
 
-        return best_node
+            # If there's only one best node, return it directly
+        if len(best_nodes) == 1:
+            return best_nodes[0]
+        else:
+            # Randomly select one of the best nodes with equal probability
+            return random.choice(best_nodes)
+
+
+        # best_node = max(node.children, key=lambda child: child.calculate_ucb())
+
+        # return best_node
 
     def expansion(self, node: MonteCarloTreeNode) -> MonteCarloTreeNode:
         """
