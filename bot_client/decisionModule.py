@@ -37,7 +37,7 @@ class DecisionModule:
                 len(self.state.writeServerBuf) > 0
                 or self.state.gameMode == GameModes.PAUSED.value
             ):
-                await asyncio.sleep(0.14)  # change if pacman isn't moving as expected
+                await asyncio.sleep(0.01)  # change if pacman isn't moving as expected
                 continue
 
             self.state.lock()
