@@ -1,11 +1,16 @@
-from gameState import GameState
+from gameState import GameState, Location
 from cluster import Cluster
 from constants import (
     CLUSTER_STARTING_COORDINATES,
     NUM_CLUSTERS,
     NORMAL_GHOST_DISTANCE_THRESHOLD,
     SCARED_GHOST_DISTANCE_THRESHOLD,
+    SUPER_PELLET_LOCATIONS,
+    GHOST_MAX_FRIGHT_STEPS,
+    SP_AGG_GHOST_DISTANCE_THRESHOLD,
+    SP_DETECTION_THRESHOLD,
 )
+import functools
 
 
 class Heuristic:
@@ -15,9 +20,10 @@ class Heuristic:
             self._prefer_close_to_scared_ghosts,
             self._try_to_stay_away_from_normal_ghosts,
             self._try_to_chase_scared_ghosts,
+            self._target_super_pellets,
         ]
 
-        self.weights = [-1000, 1000, 1, 1000]
+        self.weights = [-1000, 1000, 1, 1000, 1000]
         self.num_heuristics = len(self.heuristics)
 
         self._clusters = [
@@ -32,10 +38,12 @@ class Heuristic:
         Add negative amount to heuristic score to avoid this behavior
         """
 
-        normal_ghosts = filter(lambda g: not g.isFrightened(), self.state.ghosts)
+        normal_ghosts = filter(
+            lambda g: not g.isFrightened(), self.state.ghosts)
         penalties = map(
             lambda g: max(
-                0, NORMAL_GHOST_DISTANCE_THRESHOLD - self.curr.distance_to(g.location)
+                0, NORMAL_GHOST_DISTANCE_THRESHOLD -
+                self.curr.distance_to(g.location)
             ),
             normal_ghosts,
         )
@@ -54,7 +62,8 @@ class Heuristic:
         )
         bonuses = map(
             lambda g: max(
-                0, SCARED_GHOST_DISTANCE_THRESHOLD - self.curr.distance_to(g.location)
+                0, SCARED_GHOST_DISTANCE_THRESHOLD -
+                self.curr.distance_to(g.location)
             ),
             scared_ghosts,
         )
@@ -68,7 +77,8 @@ class Heuristic:
         Farther the ghosts, better the situation
         """
 
-        normal_ghosts = filter(lambda g: not g.isFrightened(), self.state.ghosts)
+        normal_ghosts = filter(
+            lambda g: not g.isFrightened(), self.state.ghosts)
         penalties = map(
             lambda g: self.curr.distance_to(g.location),
             normal_ghosts,
@@ -83,11 +93,49 @@ class Heuristic:
 
         scared_ghosts = filter(lambda g: g.isFrightened(), self.state.ghosts)
         bonuses = map(
-            lambda g: (1 / (1 + self.curr.distance_to(g.location))),
+            lambda g: (
+                1 / (1 + self.curr.distance_to(g.location))),
             scared_ghosts,
         )
 
-        return sum(bonuses)
+        return sum(bonuses) + functools.reduce(lambda s, g: s + 1 if g.spawning else s, self.state.ghosts, 0) * 10
+
+    def _target_super_pellets(self):
+        for ghost in self.state.ghosts:
+            if ghost.isFrightened():
+                return 0
+
+        h_score = 0
+        sp_locations = []
+        for loc in SUPER_PELLET_LOCATIONS:
+            state_loc = Location(self.state)
+            state_loc.row = loc[0]
+            state_loc.col = loc[1]
+            sp_locations.append(state_loc)
+
+        super_pellets = filter(
+            lambda p: self.state.superPelletAt(p.row, p.col), sp_locations)
+
+        super_pellet = functools.reduce(lambda p0, p1: p0 if p0 and p0.distance_to(
+            self.state.pacmanLoc) < p1.distance_to(self.state.pacmanLoc) else p1, super_pellets, None)
+        if not super_pellet:
+            return 0
+
+        pellet_score = 0
+        aggregate_fright_distance = 0
+
+        for i, ghost in enumerate(sorted(filter(lambda g: not g.spawning and not g.isFrightened(), self.state.ghosts), key=lambda g: g.location.distance_to(super_pellet))):
+            aggregate_fright_distance += ghost.location.distance_to(
+                super_pellet)
+            raw_ghost_score = max((SP_AGG_GHOST_DISTANCE_THRESHOLD -
+                               aggregate_fright_distance) / SP_AGG_GHOST_DISTANCE_THRESHOLD, 0)
+            pellet_score += raw_ghost_score * 2 ** i
+
+        h_score += pellet_score * \
+            (64 - self.state.pacmanLoc.distance_to(super_pellet)
+             ) / 64
+
+        return h_score
 
     def _cluster_heuristic(self):
         # Bring all clusters up to date wrt current pacman location
