@@ -1,3 +1,5 @@
+from typing import Tuple, List
+
 GRID_WIDTH = 27
 GRID_HEIGHT = 31
 
@@ -11,7 +13,7 @@ SCARED_GHOST_DISTANCE_THRESHOLD = 10
 NUM_CLUSTERS = 4
 CLUSTER_STARTING_COORDINATES = [[7, 8], [7, 23], [20, 8], [20, 23]]
 
-SUPER_PELLET_LOCATIONS = [
+SUPER_PELLET_LOCATIONS: List[Tuple[int, int]] = [
     (3, 1),
     (3, 26),
     (23, 1),

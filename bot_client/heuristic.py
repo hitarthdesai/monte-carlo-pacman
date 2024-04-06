@@ -1,4 +1,5 @@
-from gameState import GameState, Location
+from typing import List
+from gameState import GameState, Location, Ghost
 from cluster import Cluster
 from constants import (
     CLUSTER_STARTING_COORDINATES,
@@ -6,11 +7,14 @@ from constants import (
     NORMAL_GHOST_DISTANCE_THRESHOLD,
     SCARED_GHOST_DISTANCE_THRESHOLD,
     SUPER_PELLET_LOCATIONS,
-    GHOST_MAX_FRIGHT_STEPS,
     SP_AGG_GHOST_DISTANCE_THRESHOLD,
-    SP_DETECTION_THRESHOLD,
 )
-import functools
+
+
+def create_super_pellet_location(x: int, y: int) -> Location:
+    location = Location(None)
+    location.update((x << 8) | y)
+    return location
 
 
 class Heuristic:
@@ -31,6 +35,13 @@ class Heuristic:
             for coords in CLUSTER_STARTING_COORDINATES
         ]
 
+        self.super_pellet_locations = list(
+            map(
+                lambda loc: create_super_pellet_location(loc[0], loc[1]),
+                SUPER_PELLET_LOCATIONS,
+            )
+        )
+
     def _avoid_too_close_to_normal_ghosts(self):
         """
         Avoid being too close to normal ghosts
@@ -38,12 +49,10 @@ class Heuristic:
         Add negative amount to heuristic score to avoid this behavior
         """
 
-        normal_ghosts = filter(
-            lambda g: not g.isFrightened(), self.state.ghosts)
+        normal_ghosts = filter(lambda g: not g.isFrightened(), self.state.ghosts)
         penalties = map(
             lambda g: max(
-                0, NORMAL_GHOST_DISTANCE_THRESHOLD -
-                self.curr.distance_to(g.location)
+                0, NORMAL_GHOST_DISTANCE_THRESHOLD - self.curr.distance_to(g.location)
             ),
             normal_ghosts,
         )
@@ -62,8 +71,7 @@ class Heuristic:
         )
         bonuses = map(
             lambda g: max(
-                0, SCARED_GHOST_DISTANCE_THRESHOLD -
-                self.curr.distance_to(g.location)
+                0, SCARED_GHOST_DISTANCE_THRESHOLD - self.curr.distance_to(g.location)
             ),
             scared_ghosts,
         )
@@ -77,8 +85,7 @@ class Heuristic:
         Farther the ghosts, better the situation
         """
 
-        normal_ghosts = filter(
-            lambda g: not g.isFrightened(), self.state.ghosts)
+        normal_ghosts = filter(lambda g: not g.isFrightened(), self.state.ghosts)
         penalties = map(
             lambda g: self.curr.distance_to(g.location),
             normal_ghosts,
@@ -93,47 +100,56 @@ class Heuristic:
 
         scared_ghosts = filter(lambda g: g.isFrightened(), self.state.ghosts)
         bonuses = map(
-            lambda g: (
-                1 / (1 + self.curr.distance_to(g.location))),
+            lambda g: (1 / (1 + self.curr.distance_to(g.location))),
             scared_ghosts,
         )
 
-        return sum(bonuses) + functools.reduce(lambda s, g: s + 1 if g.spawning else s, self.state.ghosts, 0) * 10
+        # TODO: We need a better way to figure out if the ghost has been actually eaten.
+        # Why: Misleading score in the beginning phase of the game.
+        # Possible ways: check how many super pellets are present on board.
+        ghosts_eaten = self.state.ghosts.count(lambda g: g.spawning)
+
+        return sum(bonuses) + ghosts_eaten * 10
 
     def _target_super_pellets(self):
-        for ghost in self.state.ghosts:
-            if ghost.isFrightened():
-                return 0
-
-        h_score = 0
-        sp_locations = []
-        for loc in SUPER_PELLET_LOCATIONS:
-            state_loc = Location(self.state)
-            state_loc.row = loc[0]
-            state_loc.col = loc[1]
-            sp_locations.append(state_loc)
-
-        super_pellets = filter(
-            lambda p: self.state.superPelletAt(p.row, p.col), sp_locations)
-
-        super_pellet = functools.reduce(lambda p0, p1: p0 if p0 and p0.distance_to(
-            self.state.pacmanLoc) < p1.distance_to(self.state.pacmanLoc) else p1, super_pellets, None)
-        if not super_pellet:
+        if any(ghost.isFrightened() for ghost in self.state.ghosts):
             return 0
 
-        pellet_score = 0
+        super_pellets = list(
+            filter(
+                lambda p: self.state.pelletAt(p.row, p.col), self.super_pellet_locations
+            )
+        )
+        if len(super_pellets) == 0:
+            return 0
+
+        super_pellets.sort(key=lambda p: self.curr.distance_to(p))
+        closest_super_pellet = super_pellets[0]
+
+        ghosts: List[Ghost] = sorted(
+            filter(lambda g: not g.spawning, self.state.ghosts),
+            key=lambda g: g.location.distance_to(closest_super_pellet),
+        )
+
         aggregate_fright_distance = 0
+        pellet_score = 0.0
 
-        for i, ghost in enumerate(sorted(filter(lambda g: not g.spawning and not g.isFrightened(), self.state.ghosts), key=lambda g: g.location.distance_to(super_pellet))):
+        for i, ghost in enumerate(ghosts):
             aggregate_fright_distance += ghost.location.distance_to(
-                super_pellet)
-            raw_ghost_score = max((SP_AGG_GHOST_DISTANCE_THRESHOLD -
-                               aggregate_fright_distance) / SP_AGG_GHOST_DISTANCE_THRESHOLD, 0)
-            pellet_score += raw_ghost_score * 2 ** i
+                closest_super_pellet
+            )
+            raw_ghost_score = max(
+                (SP_AGG_GHOST_DISTANCE_THRESHOLD - aggregate_fright_distance)
+                / SP_AGG_GHOST_DISTANCE_THRESHOLD,
+                0,
+            )
+            pellet_score += raw_ghost_score * 2**i
 
-        h_score += pellet_score * \
-            (64 - self.state.pacmanLoc.distance_to(super_pellet)
-             ) / 64
+        h_score = (
+            pellet_score
+            * (64 - self.state.pacmanLoc.distance_to(closest_super_pellet))
+            / 64
+        )
 
         return h_score
 
