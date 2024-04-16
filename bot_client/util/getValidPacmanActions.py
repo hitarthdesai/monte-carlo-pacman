@@ -33,6 +33,8 @@ def get_valid_pacman_actions(gs: GameState) -> List[Directions]:
         lambda loc: is_location_within_grid(loc) and not gs.wallAt(loc.row, loc.col),
         next_moves,
     )
-    dirs = map(lambda loc: location_to_direction(gs.pacmanLoc, loc), valid_moves)
-
-    return list(dirs)
+    dirs = list(map(lambda loc: location_to_direction(gs.pacmanLoc, loc), valid_moves))
+    if len(dirs) == 0:
+        print("No valid moves for pacman!")
+    # print("LENGTH OF ACTIONS: ", len((dirs)))
+    return dirs
