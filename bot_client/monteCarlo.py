@@ -72,7 +72,10 @@ class MonteCarlo:
             )
             node.children = list(children)
 
-        best_node = max(node.children, key=lambda child: child.calculate_ucb())
+        try:
+            best_node = max(node.children, key=lambda child: child.calculate_ucb())
+        except ValueError:
+            best_node = node
 
         return best_node
 
@@ -86,10 +89,18 @@ class MonteCarlo:
 
         actions = get_valid_pacman_actions(node.state)
 
+        # Return the current node, if expansion is not possible
+        if len(actions) == 0:
+            return node
+
         # If all actions have been explored, return random node
         if len(actions) == len(node.children):
             return random.choice(node.children)
-        action = random.choice(actions)
+
+        try:
+            action = random.choice(actions)
+        except IndexError:
+            action = Directions.NONE
 
         state = GameState()
         state.update(node.state.serialize())
@@ -119,6 +130,8 @@ class MonteCarlo:
 
         for _ in range(SIMULATION_DEPTH):
             actions = get_valid_pacman_actions(state)
+            if len(actions) == 0:
+                break
 
             scores = []
             for action in actions:
@@ -162,13 +175,16 @@ class MonteCarlo:
         Get the best action from the current state.
         """
 
-        # If there are no children, return a random action
-        if not self.root.children:
-            return random.choice(get_valid_pacman_actions(self.mcts.root.state))
+        try:
+            best_child = max(
+                self.root.children, key=lambda child: child.total_reward / child.visits
+            )
+            best_action = best_child.action
+        except:
+            valid_actions = get_valid_pacman_actions(self.root.state)
+            if len(valid_actions) == 0:
+                best_action = Directions.NONE
+            else:
+                best_action = random.choice(valid_actions)
 
-        # Otherwise, select the child node with the highest average reward
-        best_child = max(
-            self.root.children, key=lambda child: child.total_reward / child.visits
-        )
-
-        return best_child.action
+        return best_action
