@@ -1,11 +1,20 @@
-from gameState import GameState
+from typing import List
+from gameState import GameState, Location, Ghost
 from cluster import Cluster
 from constants import (
     CLUSTER_STARTING_COORDINATES,
     NUM_CLUSTERS,
     NORMAL_GHOST_DISTANCE_THRESHOLD,
     SCARED_GHOST_DISTANCE_THRESHOLD,
+    SUPER_PELLET_LOCATIONS,
+    SP_AGG_GHOST_DISTANCE_THRESHOLD,
 )
+
+
+def create_super_pellet_location(x: int, y: int) -> Location:
+    location = Location(None)
+    location.update((x << 8) | y)
+    return location
 
 
 class Heuristic:
@@ -15,15 +24,23 @@ class Heuristic:
             self._prefer_close_to_scared_ghosts,
             self._try_to_stay_away_from_normal_ghosts,
             self._try_to_chase_scared_ghosts,
+            self._target_super_pellets,
         ]
 
-        self.weights = [-1000, 1000, 1, 1000]
+        self.weights = [-1000, 1000, 1, 1000, 1000]
         self.num_heuristics = len(self.heuristics)
 
         self._clusters = [
             Cluster(coords[0], coords[1], NUM_CLUSTERS)
             for coords in CLUSTER_STARTING_COORDINATES
         ]
+
+        self.super_pellet_locations = list(
+            map(
+                lambda loc: create_super_pellet_location(loc[0], loc[1]),
+                SUPER_PELLET_LOCATIONS,
+            )
+        )
 
     def _avoid_too_close_to_normal_ghosts(self):
         """
@@ -87,7 +104,54 @@ class Heuristic:
             scared_ghosts,
         )
 
-        return sum(bonuses)
+        # TODO: We need a better way to figure out if the ghost has been actually eaten.
+        # Why: Misleading score in the beginning phase of the game.
+        # Possible ways: check how many super pellets are present on board.
+        ghosts_eaten = self.state.ghosts.count(lambda g: g.spawning)
+
+        return sum(bonuses) + ghosts_eaten * 10
+
+    def _target_super_pellets(self):
+        if any(ghost.isFrightened() for ghost in self.state.ghosts):
+            return 0
+
+        super_pellets = list(
+            filter(
+                lambda p: self.state.pelletAt(p.row, p.col), self.super_pellet_locations
+            )
+        )
+        if len(super_pellets) == 0:
+            return 0
+
+        super_pellets.sort(key=lambda p: self.curr.distance_to(p))
+        closest_super_pellet = super_pellets[0]
+
+        ghosts: List[Ghost] = sorted(
+            filter(lambda g: not g.spawning, self.state.ghosts),
+            key=lambda g: g.location.distance_to(closest_super_pellet),
+        )
+
+        aggregate_fright_distance = 0
+        pellet_score = 0.0
+
+        for i, ghost in enumerate(ghosts):
+            aggregate_fright_distance += ghost.location.distance_to(
+                closest_super_pellet
+            )
+            raw_ghost_score = max(
+                (SP_AGG_GHOST_DISTANCE_THRESHOLD - aggregate_fright_distance)
+                / SP_AGG_GHOST_DISTANCE_THRESHOLD,
+                0,
+            )
+            pellet_score += raw_ghost_score * 2**i
+
+        h_score = (
+            pellet_score
+            * (64 - self.state.pacmanLoc.distance_to(closest_super_pellet))
+            / 64
+        )
+
+        return h_score
 
     def _cluster_heuristic(self):
         # Bring all clusters up to date wrt current pacman location
